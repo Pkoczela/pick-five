@@ -1,0 +1,6 @@
+import { NextRequest } from "next/server";
+import { z } from "zod";
+import { createUserClient } from "@/lib/supabase/server";
+import { redirectWith } from "@/lib/http/redirect";
+const schema=z.object({gameId:z.uuid(),homeScore:z.union([z.literal(""),z.coerce.number().int().min(0)]).transform(value=>value===""?null:value),awayScore:z.union([z.literal(""),z.coerce.number().int().min(0)]).transform(value=>value===""?null:value),atsResult:z.enum(["HOME","AWAY","PUSH","VOID"]),reason:z.string().trim().min(3).max(300)});
+export async function POST(request:NextRequest){const parsed=schema.safeParse(Object.fromEntries(await request.formData()));if(!parsed.success)return redirectWith(request,"/admin/results","error",parsed.error.issues[0]?.message??"Invalid override");const supabase=await createUserClient();const{error}=await supabase.rpc("override_game_result",{p_game_id:parsed.data.gameId,p_home_score:parsed.data.homeScore,p_away_score:parsed.data.awayScore,p_ats_result:parsed.data.atsResult,p_reason:parsed.data.reason});if(error)return redirectWith(request,"/admin/results","error",error.message);return redirectWith(request,"/admin/results","notice","Game result overridden and affected picks rescored.")}

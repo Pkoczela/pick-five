@@ -1,0 +1,4 @@
+import { NextRequest } from "next/server";
+import { createUserClient } from "@/lib/supabase/server";
+import { redirectWith } from "@/lib/http/redirect";
+export async function POST(request:NextRequest){const form=await request.formData();const weekId=String(form.get("weekId")??"");const note=String(form.get("note")??"");const allocations=[...form.entries()].filter(([key])=>key.startsWith("allocation_")).map(([key,value])=>({member_id:key.slice(11),amount_cents:Math.round(Number(value)*100)})).filter(item=>Number.isSafeInteger(item.amount_cents)&&item.amount_cents>=0);const supabase=await createUserClient();const{error}=await supabase.rpc("finalize_week_manual",{p_week_id:weekId,p_allocations:allocations,p_note:note});if(error)return redirectWith(request,"/admin/results","error",error.message);return redirectWith(request,"/admin/results","notice","Manual tie resolution finalized.")}

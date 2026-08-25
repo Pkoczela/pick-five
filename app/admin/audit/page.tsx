@@ -1,0 +1,7 @@
+import Link from "next/link";
+import { requireAdminContext } from "@/lib/auth/context";
+import { createUserClient } from "@/lib/supabase/server";
+
+export default async function AuditPage(){const context=await requireAdminContext();const supabase=await createUserClient();const{data:events}=await supabase.from("audit_events").select("id,event_type,entity_type,reason,created_at,actor_user_id").eq("league_id",context.leagueId).order("created_at",{ascending:false}).limit(100);return <main className="standalone-page"><Link href="/admin" className="back-link">← Commissioner</Link><p className="eyebrow">AUDIT LOG</p><h1>Every sensitive change.</h1><p className="page-lede">Newest first. Events are append-only and visible only to commissioners.</p>{events?.length?<div className="audit-list">{events.map(event=><article key={event.id}><div><strong>{friendly(event.event_type)}</strong><span>{event.entity_type}</span></div><p>{event.reason||"No additional note"}</p><time>{formatDate(event.created_at)}</time></article>)}</div>:<div className="coming-panel">No audited events yet.</div>}</main>}
+function friendly(value:string){return value.toLowerCase().replaceAll("_"," ").replace(/^./,letter=>letter.toUpperCase())}
+function formatDate(value:string){return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York",timeZoneName:"short"}).format(new Date(value))}
