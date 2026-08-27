@@ -75,7 +75,7 @@ export default async function DashboardPage() {
           <div className="page-heading"><div><p className="eyebrow">CURRENT POOL</p><h1>Week {week.nfl_week}</h1></div><span className="status-pill">{weekLabel}</span></div>
           <section className="dashboard-grid">
             <article className="metric-card jackpot-card"><span>Current jackpot</span><strong>{formatMoney(financials?.availableJackpotCents ?? 0)}</strong><small>{week.contribution_override_cents !== null ? "Commissioner contribution override applied" : formatJackpotBasis(participatingEntries, week.default_entry_fee_cents, week.rollover_in_cents)}</small></article>
-            <article className="metric-card"><span>Your entry</span><strong className="entry-state">{entry?.status === "SUBMITTED" ? "Submitted" : "Not submitted"}</strong><small>{entry?.submitted_at ? `Saved ${new Date(entry.submitted_at).toLocaleString()}` : "Pick five teams before lock"}</small></article>
+            <article className="metric-card"><span>Your entry</span><strong className="entry-state">{entry && ["SUBMITTED", "LOCKED"].includes(entry.status) ? (entry.status === "LOCKED" ? "Locked" : "Submitted") : "Not submitted"}</strong><small>{entry?.submitted_at ? `Saved ${new Date(entry.submitted_at).toLocaleString()}` : "Pick five teams before lock"}</small></article>
           </section>
           <section className="primary-action-card">
             <div><p className="eyebrow">YOUR WEEK</p><h2>{entry ? "Your five are in." : "Ready to make your five?"}</h2><p>{formatLock(week.lock_at)}</p></div>

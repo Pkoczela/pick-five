@@ -16,7 +16,7 @@ export default async function AdminWeeksPage({ searchParams }: { searchParams: P
   const supabase = await createUserClient();
   const { data: seasons } = await supabase.from("seasons").select("id, year").eq("league_id", context.leagueId).order("year", { ascending: false }).limit(1);
   const season = seasons?.[0];
-  const { data: weeks } = season ? await supabase.from("weeks").select("id, nfl_week, season_type, status, lock_at, unpaid_entries_eligible").eq("season_id", season.id).order("nfl_week", { ascending: false }).limit(1) : { data: null };
+  const { data: weeks } = season ? await supabase.from("weeks").select("id, nfl_week, season_type, status, lock_at, unpaid_entries_eligible, test_lock_active, test_original_lock_at").eq("season_id", season.id).order("nfl_week", { ascending: false }).limit(1) : { data: null };
   const week = weeks?.[0];
   const { data: rawGames } = week ? await supabase
     .from("games")
@@ -85,6 +85,39 @@ export default async function AdminWeeksPage({ searchParams }: { searchParams: P
               <label className="field"><span>Are unpaid entries eligible?</span><select name="unpaidEntriesEligible" defaultValue="true"><option value="true">Yes, eligible</option><option value="false">No, ineligible</option></select></label>
               <button type="submit" className="button button-primary">Publish week</button>
             </form>
+          ) : null}
+
+          {week.status === "OPEN" && !week.test_lock_active ? (
+            <section className="lock-test-panel">
+              <div>
+                <p className="eyebrow">PRESEASON TEST</p>
+                <h2>Test the locked pool board.</h2>
+                <p>This temporarily locks all entries and reveals submitted picks to every league member. End the test to restore the real deadline and reopen editing.</p>
+              </div>
+              <form action="/api/admin/week/test-lock" method="post">
+                <input type="hidden" name="weekId" value={week.id} />
+                <input type="hidden" name="action" value="start" />
+                <label className="field"><span>Audit reason</span><input name="reason" defaultValue="Preseason locked-board test" required minLength={3} /></label>
+                <button type="submit" className="button button-primary">Start locked-board test</button>
+              </form>
+            </section>
+          ) : null}
+
+          {week.test_lock_active ? (
+            <section className="lock-test-panel lock-test-active">
+              <div>
+                <p className="eyebrow">TEST ACTIVE</p>
+                <h2>Submitted picks are visible.</h2>
+                <p>Players cannot edit while this test is active. Check the shared board, then end the test before the original deadline.</p>
+                <a href={`/live/${week.id}`} className="text-link">Open shared pool board →</a>
+              </div>
+              <form action="/api/admin/week/test-lock" method="post">
+                <input type="hidden" name="weekId" value={week.id} />
+                <input type="hidden" name="action" value="end" />
+                <label className="field"><span>Audit reason</span><input name="reason" defaultValue="Locked-board test complete" required minLength={3} /></label>
+                <button type="submit" className="button button-primary">End test and reopen entries</button>
+              </form>
+            </section>
           ) : null}
         </>
       )}
