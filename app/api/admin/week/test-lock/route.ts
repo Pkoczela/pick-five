@@ -7,6 +7,11 @@ const schema = z.object({
   weekId: z.string().uuid(),
   action: z.enum(["start", "end"]),
   reason: z.string().trim().min(3, "Enter a short reason for the audit log.").max(300),
+  acknowledge: z.enum(["yes"]).optional(),
+}).superRefine((value, context) => {
+  if (value.action === "start" && value.acknowledge !== "yes") {
+    context.addIssue({ code: "custom", path: ["acknowledge"], message: "Confirm that this week contains test picks before revealing them." });
+  }
 });
 
 export async function POST(request: NextRequest) {

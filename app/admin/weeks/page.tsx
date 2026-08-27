@@ -98,6 +98,7 @@ export default async function AdminWeeksPage({ searchParams }: { searchParams: P
                 <input type="hidden" name="weekId" value={week.id} />
                 <input type="hidden" name="action" value="start" />
                 <label className="field"><span>Audit reason</span><input name="reason" defaultValue="Preseason locked-board test" required minLength={3} /></label>
+                <label className="test-acknowledgment"><input type="checkbox" name="acknowledge" value="yes" required /> <span>I confirm these are test picks. Everyone will see them.</span></label>
                 <button type="submit" className="button button-primary">Start locked-board test</button>
               </form>
             </section>

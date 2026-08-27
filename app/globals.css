@@ -343,6 +343,8 @@ button, input, select, textarea { font: inherit; }
 .lock-test-panel p:last-of-type { margin: 8px 0 0; color: var(--ink-soft); font-size: .82rem; line-height: 1.5; }
 .lock-test-panel form { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
 .lock-test-panel button { border: 0; cursor: pointer; }
+.test-acknowledgment { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .76rem; }
+.test-acknowledgment input { width: 18px; height: 18px; accent-color: var(--orange); }
 .lock-test-active { border-color: var(--orange); background: #fff9f2; }
 .lock-test-active .text-link { display: inline-block; margin-top: 14px; color: var(--orange); font-weight: 800; text-underline-offset: 4px; }
 
