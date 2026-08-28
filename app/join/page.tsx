@@ -1,6 +1,11 @@
 import { AuthCard, Field } from "@/components/auth-card";
+import { redirect } from "next/navigation";
+import { createUserClient } from "@/lib/supabase/server";
 
 export default async function JoinPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const supabase = await createUserClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/leagues");
   const params = await searchParams;
   return (
     <AuthCard eyebrow="JOIN A LEAGUE" title="You’re invited." description="Enter the reusable code from your league owner, then make the account you’ll use each week." action="Create account" endpoint="/api/auth/join" error={params.error} alternate={{ text: "Already joined?", label: "Log in", href: "/login" }}>

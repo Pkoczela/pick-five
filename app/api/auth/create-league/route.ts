@@ -3,17 +3,19 @@ import { createLeagueSchema } from "@/lib/auth/schemas";
 import { setInviteCodeCookie } from "@/lib/auth/invite-code-cookie";
 import { createLeagueOwnerAccount } from "@/lib/auth/register";
 import { createUserClient } from "@/lib/supabase/server";
+import { setActiveLeagueCookie } from "@/lib/auth/active-league";
 
 export async function POST(request: NextRequest) {
   const parsed = createLeagueSchema.safeParse(Object.fromEntries(await request.formData()));
   if (!parsed.success) return redirectError(request, parsed.error.issues[0]?.message ?? "Invalid league details");
   try {
-    const { email, inviteCode } = await createLeagueOwnerAccount(parsed.data);
+    const { email, inviteCode, leagueId } = await createLeagueOwnerAccount(parsed.data);
     const supabase = await createUserClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password: parsed.data.password });
     if (error) throw new Error("League created. Please log in.");
     const response = NextResponse.redirect(new URL("/dashboard", request.url), 303);
-    setInviteCodeCookie(response, request, inviteCode);
+    setInviteCodeCookie(response, request, inviteCode, leagueId);
+    setActiveLeagueCookie(response, request, leagueId);
     return response;
   } catch (error) {
     return redirectError(request, error instanceof Error ? error.message : "Could not create the league.");

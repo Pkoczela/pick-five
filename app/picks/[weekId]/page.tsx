@@ -16,8 +16,9 @@ export default async function PicksPage({ params }: { params: Promise<{ weekId: 
   const { weekId } = await params;
   const context = await requireLeagueContext();
   const supabase = await createUserClient();
-  const { data: week } = await supabase.from("weeks").select("id, nfl_week, status, lock_at, tiebreaker_game_id").eq("id", weekId).maybeSingle();
-  if (!week || !week.lock_at || week.status === "DRAFT") notFound();
+  const { data: rawWeek } = await supabase.from("weeks").select("id, nfl_week, status, lock_at, tiebreaker_game_id, season:seasons!inner(league_id)").eq("id", weekId).maybeSingle();
+  const week = rawWeek as unknown as (typeof rawWeek & { season: { league_id: string } | null }) | null;
+  if (!week || !week.lock_at || week.status === "DRAFT" || week.season?.league_id !== context.leagueId) notFound();
   const { data: rawGames } = await supabase.from("games").select("id, kickoff_at, home_team:teams!games_home_team_id_fkey(abbreviation, display_name), away_team:teams!games_away_team_id_fkey(abbreviation, display_name), official_lines(home_spread, is_current)").eq("week_id", weekId).eq("is_selectable", true).order("kickoff_at");
   const rows = (rawGames ?? []) as unknown as GameRow[];
   const games: PickGame[] = rows.flatMap((row) => {

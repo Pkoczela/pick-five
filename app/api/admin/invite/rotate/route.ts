@@ -12,6 +12,6 @@ export async function POST(request: NextRequest) {
   const { error } = await supabase.rpc("rotate_league_invite", { p_league_id: leagueId, p_code_hash: hashInviteCode(code), p_code_hint: code.slice(-4) });
   if (error) return redirectWith(request, "/admin/players", "error", error.message);
   const response = NextResponse.redirect(new URL("/admin/players", request.url), 303);
-  setInviteCodeCookie(response, request, code);
+  setInviteCodeCookie(response, request, code, leagueId);
   return response;
 }

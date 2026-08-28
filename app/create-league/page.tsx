@@ -1,6 +1,11 @@
 import { AuthCard, Field } from "@/components/auth-card";
+import { redirect } from "next/navigation";
+import { createUserClient } from "@/lib/supabase/server";
 
 export default async function CreateLeaguePage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const supabase = await createUserClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/leagues");
   const params = await searchParams;
   return (
     <AuthCard eyebrow="START A POOL" title="Create your league." description="You’ll be the owner. After setup, share your reusable league code with the players you want to invite." action="Create league" endpoint="/api/auth/create-league" error={params.error} alternate={{ text: "Joining someone else?", label: "Enter their code", href: "/join" }}>

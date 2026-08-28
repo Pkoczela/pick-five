@@ -1,41 +1,24 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { hasSupabaseEnvironment } from "@/lib/env";
 import { createUserClient } from "@/lib/supabase/server";
-import { INVITE_CODE_COOKIE } from "@/lib/auth/invite-code-cookie";
+import { INVITE_CODE_COOKIE, INVITE_LEAGUE_COOKIE } from "@/lib/auth/invite-code-cookie";
 import { calculateWeeklyFinancials } from "@/lib/domain/financials";
-
-type Membership = {
-  id: string;
-  display_name: string;
-  role: "OWNER" | "COMMISSIONER" | "PLAYER";
-  league: { id: string; name: string; slug: string } | null;
-};
+import { requireLeagueContext } from "@/lib/auth/context";
 
 export default async function DashboardPage() {
   if (!hasSupabaseEnvironment()) return <SetupRequired />;
-  const inviteCode = (await cookies()).get(INVITE_CODE_COOKIE)?.value;
+  const cookieStore = await cookies();
+  const inviteCodeCookie = cookieStore.get(INVITE_CODE_COOKIE)?.value;
   const supabase = await createUserClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
-
-  const { data } = await supabase
-    .from("league_members")
-    .select("id, display_name, role, league:leagues(id, name, slug)")
-    .eq("user_id", user.id)
-    .eq("active", true)
-    .limit(1)
-    .maybeSingle();
-  const membership = data as unknown as Membership | null;
-  if (!membership?.league) redirect("/join?error=No active league membership was found.");
-
-  const isAdmin = membership.role === "OWNER" || membership.role === "COMMISSIONER";
+  const context = await requireLeagueContext();
+  const inviteCode = cookieStore.get(INVITE_LEAGUE_COOKIE)?.value === context.leagueId ? inviteCodeCookie : undefined;
+  const isAdmin = context.role === "OWNER" || context.role === "COMMISSIONER";
   const { data: seasons } = await supabase
     .from("seasons")
     .select("id")
-    .eq("league_id", membership.league.id)
+    .eq("league_id", context.leagueId)
     .eq("status", "ACTIVE")
     .limit(1);
   const seasonId = seasons?.[0]?.id;
@@ -57,13 +40,13 @@ export default async function DashboardPage() {
       })
     : null;
   const { data: entry } = week
-    ? await supabase.from("entries").select("id, status, submitted_at").eq("week_id", week.id).eq("league_member_id", membership.id).maybeSingle()
+    ? await supabase.from("entries").select("id, status, submitted_at").eq("week_id", week.id).eq("league_member_id", context.memberId).maybeSingle()
     : { data: null };
   const weekLabel = week ? effectiveLabel(week.status, week.lock_at) : null;
   const isLocked = weekLabel !== "OPEN";
 
   return (
-    <AppShell leagueName={membership.league.name} displayName={membership.display_name} isAdmin={isAdmin}>
+    <AppShell leagueName={context.leagueName} displayName={context.displayName} isAdmin={isAdmin} leagueCount={context.leagueCount}>
       {inviteCode ? (
         <section className="invite-banner">
           <div><span>YOUR REUSABLE LEAGUE CODE</span><strong>{inviteCode}</strong></div>

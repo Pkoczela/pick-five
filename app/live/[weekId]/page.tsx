@@ -22,15 +22,16 @@ type Entry = {
 
 export default async function LivePage({ params }: { params: Promise<{ weekId: string }> }) {
   const { weekId } = await params;
-  await requireLeagueContext();
+  const context = await requireLeagueContext();
   const supabase = await createUserClient();
   const { data: week } = await supabase
     .from("weeks")
-    .select("id, nfl_week, status, lock_at, test_lock_active")
+    .select("id, nfl_week, status, lock_at, test_lock_active, season:seasons!inner(league_id)")
     .eq("id", weekId)
     .maybeSingle();
 
-  if (!week?.lock_at) notFound();
+  const weekLeagueId = (week as unknown as { season: { league_id: string } | null } | null)?.season?.league_id;
+  if (!week?.lock_at || weekLeagueId !== context.leagueId) notFound();
   if (!isEffectivelyLocked(week.status, new Date(week.lock_at))) {
     return (
       <main className="standalone-page">

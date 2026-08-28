@@ -4,17 +4,18 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { createUserClient } from "@/lib/supabase/server";
 import { EspnNflProvider } from "@/lib/providers/espn";
 import { redirectWith } from "@/lib/http/redirect";
+import { requireAdminContext } from "@/lib/auth/context";
 
 const schema = z.object({ weekId: z.uuid(), year: z.coerce.number().int(), nflWeek: z.coerce.number().int(), seasonType: z.coerce.number().int() });
 
 export async function POST(request: NextRequest) {
   const parsed = schema.safeParse(Object.fromEntries(await request.formData()));
   if (!parsed.success) return redirectWith(request, "/admin/weeks", "error", "Invalid import request.");
+  const context = await requireAdminContext();
   const userClient = await createUserClient();
-  const { data: { user } } = await userClient.auth.getUser();
-  const { data: member } = user ? await userClient.from("league_members").select("role").eq("user_id", user.id).eq("active", true).limit(1).maybeSingle() : { data: null };
-  const { data: week } = user && member && ["OWNER", "COMMISSIONER"].includes(member.role) ? await userClient.from("weeks").select("id").eq("id", parsed.data.weekId).maybeSingle() : { data: null };
-  if (!user || !week) return redirectWith(request, "/admin/weeks", "error", "Commissioner access required.");
+  const { data: rawWeek } = await userClient.from("weeks").select("id,season:seasons!inner(league_id)").eq("id", parsed.data.weekId).maybeSingle();
+  const week = rawWeek as unknown as { id: string; season: { league_id: string } | null } | null;
+  if (!week?.season || week.season.league_id !== context.leagueId) return redirectWith(request, "/admin/weeks", "error", "That week does not belong to the selected league.");
 
   try {
     const games = await new EspnNflProvider().getWeekSchedule({ year: parsed.data.year, week: parsed.data.nflWeek, seasonType: parsed.data.seasonType });

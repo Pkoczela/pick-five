@@ -17,7 +17,7 @@ export async function createLeagueOwnerAccount(input: AccountInput & { leagueNam
 
   const inviteCode = createInviteCode();
   const slug = `${slugify(input.leagueName)}-${Math.random().toString(36).slice(2, 7)}`;
-  const { error } = await admin.rpc("create_owned_league", {
+  const { data: leagueId, error } = await admin.rpc("create_owned_league", {
     p_user_id: authData.user.id,
     p_name: input.leagueName,
     p_slug: slug,
@@ -28,7 +28,7 @@ export async function createLeagueOwnerAccount(input: AccountInput & { leagueNam
     await admin.auth.admin.deleteUser(authData.user.id);
     throw new Error("Could not create the league. Please try again.");
   }
-  return { email, inviteCode };
+  return { email, inviteCode, leagueId: String(leagueId) };
 }
 
 export async function createPlayerAccount(input: AccountInput & { inviteCode: string }) {
@@ -61,7 +61,7 @@ export async function createPlayerAccount(input: AccountInput & { inviteCode: st
     await admin.auth.admin.deleteUser(authData.user.id);
     throw new Error("Could not join the league. Please ask the owner to check the code.");
   }
-  return { email };
+  return { email, leagueId: invite.league_id };
 }
 
 function readableAuthError(message?: string) {

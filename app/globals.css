@@ -259,8 +259,9 @@ button, input, select, textarea { font: inherit; }
   background: var(--ink);
 }
 .app-header .mark { color: var(--ink); background: var(--lime); }
-.league-chip { display: grid; text-align: right; font-size: 0.76rem; }
+.league-chip { display: grid; text-align: right; font-size: 0.76rem; text-decoration: none; }
 .league-chip span { color: rgba(244,240,230,0.65); }
+.league-chip:hover strong { color: var(--lime); }
 .app-layout { width: min(1180px, calc(100% - 40px)); margin: 0 auto; display: grid; grid-template-columns: 190px 1fr; gap: 60px; }
 .app-nav { min-height: calc(100vh - 78px); padding: 40px 0; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
 .app-nav a, .app-nav button { width: calc(100% - 24px); min-height: 43px; display: flex; align-items: center; padding: 0 13px; border: 0; border-radius: 5px; color: var(--ink-soft); background: none; font: inherit; font-size: 0.87rem; font-weight: 700; text-decoration: none; cursor: pointer; }
@@ -317,7 +318,22 @@ button, input, select, textarea { font: inherit; }
 .tool-card p { margin: 0; color: var(--ink-soft); line-height: 1.6; }
 .tool-card span { margin-top: auto; color: var(--orange); font-weight: 850; }
 .coming-panel { min-height: 170px; display: grid; place-items: center; padding: 30px; border: 1px dashed rgba(16,40,31,0.28); border-radius: 8px; color: var(--ink-soft); background: rgba(255,255,255,0.35); text-align: center; }
+.league-list { display: grid; gap: 10px; margin-top: 38px; }
+.league-card { min-height: 112px; padding: 22px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
+.league-card-active { border-color: var(--orange); box-shadow: inset 4px 0 0 var(--orange); }
+.league-card div { display: grid; gap: 4px; }
+.league-card div>span { color: var(--orange); font-family: "SFMono-Regular",Consolas,monospace; font-size: .66rem; font-weight: 850; letter-spacing: .1em; }
+.league-card h2 { margin: 0; font-size: 1.5rem; letter-spacing: -.035em; }
+.league-card p { margin: 0; color: var(--ink-soft); font-size: .8rem; }
+.league-card>strong { color: #2d5c2e; font-size: .78rem; text-transform: uppercase; }
+.league-card button { border: 0; cursor: pointer; }
+.league-actions { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.league-action-form { display: grid; gap: 17px; align-content: start; }
+.league-action-form h2 { margin: 0; font-size: 1.65rem; letter-spacing: -.04em; }
+.league-action-form div>p:last-child { margin: 7px 0 0; color: var(--ink-soft); font-size: .8rem; line-height: 1.5; }
+.league-action-form button { justify-self: start; border: 0; cursor: pointer; }
 @media (max-width: 650px) { .tool-grid { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .league-actions { grid-template-columns: 1fr; } .league-card { align-items: flex-start; flex-direction: column; } .league-card form,.league-card button { width: 100%; } }
 
 .panel, .publish-panel { padding: 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
 .admin-form { display: grid; gap: 26px; margin-top: 44px; }

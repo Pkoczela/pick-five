@@ -1,6 +1,9 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createUserClient } from "@/lib/supabase/server";
+import { ACTIVE_LEAGUE_COOKIE } from "@/lib/auth/active-league";
+import { selectActiveMembership } from "@/lib/auth/membership-selection";
 
 export type LeagueContext = {
   userId: string;
@@ -9,6 +12,7 @@ export type LeagueContext = {
   role: "OWNER" | "COMMISSIONER" | "PLAYER";
   leagueId: string;
   leagueName: string;
+  leagueCount: number;
 };
 
 type MembershipRow = {
@@ -22,9 +26,11 @@ export async function requireLeagueContext(): Promise<LeagueContext> {
   const supabase = await createUserClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  const { data } = await supabase.from("league_members").select("id, display_name, role, league:leagues(id, name)").eq("user_id", user.id).eq("active", true).limit(1).maybeSingle();
-  const membership = data as unknown as MembershipRow | null;
-  if (!membership?.league) redirect("/join?error=No active league membership was found.");
+  const { data } = await supabase.from("league_members").select("id, display_name, role, created_at, league:leagues(id, name)").eq("user_id", user.id).eq("active", true).order("created_at");
+  const memberships = (data ?? []) as unknown as MembershipRow[];
+  const requestedLeagueId = (await cookies()).get(ACTIVE_LEAGUE_COOKIE)?.value;
+  const membership = selectActiveMembership(memberships, requestedLeagueId);
+  if (!membership?.league) redirect("/leagues?error=No active league membership was found.");
   return {
     userId: user.id,
     memberId: membership.id,
@@ -32,6 +38,7 @@ export async function requireLeagueContext(): Promise<LeagueContext> {
     role: membership.role,
     leagueId: membership.league.id,
     leagueName: membership.league.name,
+    leagueCount: memberships.length,
   };
 }
 
