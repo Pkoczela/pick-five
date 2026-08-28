@@ -86,7 +86,7 @@ export default async function LivePage({ params }: { params: Promise<{ weekId: s
                 {[...entry.picks].sort((a, b) => new Date(a.game?.kickoff_at ?? 0).getTime() - new Date(b.game?.kickoff_at ?? 0).getTime()).map((pick) => {
                   const line = pick.game?.official_lines.find((candidate) => candidate.is_current);
                   const spread = pick.selected_side === "HOME" ? Number(line?.home_spread ?? 0) : -Number(line?.home_spread ?? 0);
-                  return <li key={pick.id}><strong>{pick.selected_team?.abbreviation} {formatSpread(spread)}</strong><span aria-label={pick.result.toLowerCase()}>{symbol(pick.result)}</span></li>;
+                  return <li key={pick.id} className={resultRowClass(pick.result)}><strong>{pick.selected_team?.abbreviation} {formatSpread(spread)}</strong><span aria-label={pick.result.toLowerCase()}>{symbol(pick.result)}</span></li>;
                 })}
               </ul>
               <footer>MNF prediction <strong>{entry.tiebreaker_points}</strong></footer>
@@ -104,6 +104,12 @@ function symbol(result: LivePickResult) {
   if (result === "PUSH") return "—";
   if (result === "VOID") return "VOID";
   return "…";
+}
+
+function resultRowClass(result: LivePickResult) {
+  if (result === "CORRECT") return "pick-result-correct";
+  if (result === "INCORRECT") return "pick-result-incorrect";
+  return undefined;
 }
 
 function formatSpread(value: number) {
