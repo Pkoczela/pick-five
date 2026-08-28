@@ -412,10 +412,19 @@ button, input, select, textarea { font: inherit; }
 .finalize-panel p:last-child { margin: 8px 0 0; max-width: 620px; color: rgba(244,240,230,.65); font-size: .82rem; line-height: 1.5; }
 .finalize-panel button { border: 0; cursor: pointer; white-space: nowrap; }
 .finalized-banner { margin-top: 22px; padding: 22px; display: flex; justify-content: space-between; border-radius: 8px; color: var(--ink); background: var(--lime); }
+.simulation-banner { margin-top: 24px; padding: 24px; display: grid; grid-template-columns: 1.35fr .8fr; gap: 28px; align-items: end; border: 2px solid var(--orange); border-radius: 8px; background: #fff9f2; }
+.simulation-banner h2,.simulation-lab h2 { margin: 0; font-size: 1.7rem; letter-spacing: -.04em; }
+.simulation-banner p:last-of-type,.simulation-lab p:last-child { margin: 8px 0 0; color: var(--ink-soft); font-size: .8rem; line-height: 1.5; }
+.simulation-banner a { display: inline-block; margin-top: 12px; color: var(--orange); font-weight: 800; text-underline-offset: 4px; }
+.simulation-banner form { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.simulation-banner button { background: transparent; cursor: pointer; }
+.simulation-lab { margin-top: 22px; padding: 26px; display: grid; grid-template-columns: 1.2fr repeat(3,minmax(130px,.7fr)) auto; gap: 16px; align-items: end; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
+.simulation-lab button { border: 0; cursor: pointer; }
 .manual-panel { margin-top:22px;padding:26px;display:grid;grid-template-columns:1.2fr repeat(2,minmax(140px,.7fr));gap:18px;align-items:end;border:2px solid var(--orange);border-radius:8px;background:var(--white)}
 .manual-panel h2{margin:0;font-size:1.8rem}.manual-panel p:last-child{color:var(--ink-soft);font-size:.8rem;line-height:1.5}.manual-panel button{border:0;cursor:pointer}
 .reopen-form{margin-top:14px;padding:18px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end;border:1px solid var(--line);border-radius:7px}.reopen-form button{background:transparent;cursor:pointer}
-@media(max-width:780px){.manual-panel{grid-template-columns:1fr}.reopen-form{grid-template-columns:1fr}}
+@media(max-width:900px){.simulation-lab{grid-template-columns:1fr 1fr}.simulation-lab>div{grid-column:1/-1}}
+@media(max-width:780px){.manual-panel,.simulation-banner,.simulation-banner form,.simulation-lab,.reopen-form{grid-template-columns:1fr}.simulation-lab>div{grid-column:auto}}
 .audit-list { display: grid; gap: 8px; margin-top: 38px; }
 .audit-list article { padding: 18px; display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 20px; align-items: center; border: 1px solid var(--line); border-radius: 7px; background: var(--white); }
 .audit-list article div { display: grid; gap: 3px; }
