@@ -35,7 +35,15 @@ export default async function LeaguesPage({ searchParams }: { searchParams: Prom
       <section className="league-list" aria-label="League memberships">
         {memberships.map((membership) => membership.league ? (
           <article className={membership.league.id === activeLeagueId ? "league-card league-card-active" : "league-card"} key={membership.id}>
-            <div><span>{membership.role}</span><h2>{membership.league.name}</h2><p>Playing as {membership.display_name}</p></div>
+            <div className="league-card-copy"><span>{membership.role}</span><h2>{membership.league.name}</h2><p>Playing as {membership.display_name}</p>
+              <details className="edit-pool-name"><summary>Change display name</summary>
+                <form action="/api/leagues/display-name" method="post">
+                  <input type="hidden" name="memberId" value={membership.id}/>
+                  <label><span className="sr-only">Display name in {membership.league.name}</span><input name="displayName" defaultValue={membership.display_name} required minLength={2} maxLength={40}/></label>
+                  <button type="submit">Save name</button>
+                </form>
+              </details>
+            </div>
             {membership.league.id === activeLeagueId ? <strong>Current pool</strong> : <form action="/api/leagues/switch" method="post"><input type="hidden" name="leagueId" value={membership.league.id}/><button className="button button-primary" type="submit">Open pool</button></form>}
           </article>
         ) : null)}

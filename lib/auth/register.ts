@@ -1,6 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createInviteCode, hashInviteCode, usernameToAuthEmail } from "./credentials";
+import { friendlyDisplayNameError } from "./display-name";
 
 type AccountInput = { username: string; displayName: string; password: string };
 
@@ -59,6 +60,9 @@ export async function createPlayerAccount(input: AccountInput & { inviteCode: st
   });
   if (error) {
     await admin.auth.admin.deleteUser(authData.user.id);
+    if (error.code === "23505" || error.message.includes("league_members_display_name_unique")) {
+      throw new Error(friendlyDisplayNameError(error.message));
+    }
     throw new Error("Could not join the league. Please ask the owner to check the code.");
   }
   return { email, leagueId: invite.league_id };

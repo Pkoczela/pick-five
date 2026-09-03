@@ -321,19 +321,20 @@ button, input, select, textarea { font: inherit; }
 .league-list { display: grid; gap: 10px; margin-top: 38px; }
 .league-card { min-height: 112px; padding: 22px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
 .league-card-active { border-color: var(--orange); box-shadow: inset 4px 0 0 var(--orange); }
-.league-card div { display: grid; gap: 4px; }
+.league-card-copy { display: grid; gap: 4px; }
 .league-card div>span { color: var(--orange); font-family: "SFMono-Regular",Consolas,monospace; font-size: .66rem; font-weight: 850; letter-spacing: .1em; }
 .league-card h2 { margin: 0; font-size: 1.5rem; letter-spacing: -.035em; }
 .league-card p { margin: 0; color: var(--ink-soft); font-size: .8rem; }
 .league-card>strong { color: #2d5c2e; font-size: .78rem; text-transform: uppercase; }
 .league-card button { border: 0; cursor: pointer; }
+.edit-pool-name{margin-top:4px}.edit-pool-name summary{width:max-content;color:var(--orange);font-size:.75rem;font-weight:800;cursor:pointer}.edit-pool-name form{display:grid;grid-template-columns:minmax(150px,1fr) auto;gap:8px;margin-top:8px}.edit-pool-name input{width:100%;min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:4px;background:white}.edit-pool-name button{min-height:40px;padding:0 12px;border-radius:4px;color:white;background:var(--orange);font-weight:800}
 .league-actions { margin-top: 34px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .league-action-form { display: grid; gap: 17px; align-content: start; }
 .league-action-form h2 { margin: 0; font-size: 1.65rem; letter-spacing: -.04em; }
 .league-action-form div>p:last-child { margin: 7px 0 0; color: var(--ink-soft); font-size: .8rem; line-height: 1.5; }
 .league-action-form button { justify-self: start; border: 0; cursor: pointer; }
 @media (max-width: 650px) { .tool-grid { grid-template-columns: 1fr; } }
-@media (max-width: 700px) { .league-actions { grid-template-columns: 1fr; } .league-card { align-items: flex-start; flex-direction: column; } .league-card form,.league-card button { width: 100%; } }
+@media (max-width: 700px) { .league-actions { grid-template-columns: 1fr; } .league-card { align-items: flex-start; flex-direction: column; } .league-card>form,.league-card>form button { width: 100%; } .edit-pool-name form{grid-template-columns:1fr}.edit-pool-name button{width:100%} }
 
 .panel, .publish-panel { padding: 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }
 .admin-form { display: grid; gap: 26px; margin-top: 44px; }
@@ -417,7 +418,7 @@ button, input, select, textarea { font: inherit; }
 .payment-row form { justify-self: end; }
 .payment-row button { min-height: 40px; padding-inline: 14px; background: transparent; cursor: pointer; }
 .submission-row { grid-template-columns: 1.25fr .65fr .9fr .45fr .65fr; }.submission-row>a{color:var(--orange);font-weight:800;text-underline-offset:4px}
-.member-row{grid-template-columns:1.2fr .7fr .6fr 1.7fr}.member-controls{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.member-controls>form{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}.member-row select{min-height:38px;border:1px solid var(--line);border-radius:4px;background:white}.member-row button{border:0;border-radius:4px;color:white;background:var(--orange);font-weight:800;cursor:pointer}.remove-member summary{padding:8px;color:#9b351f;font-size:.76rem;font-weight:800;cursor:pointer}.remove-member[open]{grid-column:1/-1}.remove-member>div{margin-top:8px;padding:16px;border:1px solid #dfaaa1;border-radius:6px;background:#fff8f6}.remove-member p{margin:0 0 12px;color:var(--ink-soft);font-size:.76rem;line-height:1.5}.remove-member form{display:block}.remove-member button{width:100%;min-height:40px;background:#9b351f}.owner-self{color:var(--ink-soft);font-size:.72rem}
+.member-row{grid-template-columns:1.2fr .7fr .6fr 1.7fr}.member-name-cell{display:grid;gap:4px;min-width:0}.rename-member summary{width:max-content;color:var(--orange);font-size:.72rem;font-weight:800;cursor:pointer}.rename-member form{display:grid;grid-template-columns:minmax(100px,1fr) auto;gap:6px;margin-top:6px}.rename-member input{min-width:0;min-height:38px;padding:0 8px;border:1px solid var(--line);border-radius:4px}.member-controls{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}.member-controls>form{display:grid;grid-template-columns:1fr 1fr auto;gap:6px}.member-row select{min-height:38px;border:1px solid var(--line);border-radius:4px;background:white}.member-row button{border:0;border-radius:4px;color:white;background:var(--orange);font-weight:800;cursor:pointer}.remove-member summary{padding:8px;color:#9b351f;font-size:.76rem;font-weight:800;cursor:pointer}.remove-member[open]{grid-column:1/-1}.remove-member>div{margin-top:8px;padding:16px;border:1px solid #dfaaa1;border-radius:6px;background:#fff8f6}.remove-member p{margin:0 0 12px;color:var(--ink-soft);font-size:.76rem;line-height:1.5}.remove-member form{display:block}.remove-member button{width:100%;min-height:40px;background:#9b351f}.owner-self{color:var(--ink-soft);font-size:.72rem}
 .paid-state { color: #2e6d36; font-weight: 800; }
 .unpaid-state { color: #9b351f; font-weight: 800; }
 .standings-row { grid-template-columns: 1.8fr .6fr .7fr .7fr .8fr; }

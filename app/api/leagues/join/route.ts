@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { setActiveLeagueCookie } from "@/lib/auth/active-league";
 import { hashInviteCode } from "@/lib/auth/credentials";
+import { friendlyDisplayNameError, leagueDisplayNameSchema } from "@/lib/auth/display-name";
 import { redirectWith } from "@/lib/http/redirect";
 import { createUserClient } from "@/lib/supabase/server";
 
-const schema = z.object({ inviteCode: z.string().min(6), displayName: z.string().trim().min(2).max(40) });
+const schema = z.object({ inviteCode: z.string().min(6), displayName: leagueDisplayNameSchema });
 
 export async function POST(request: NextRequest) {
   const parsed = schema.safeParse(Object.fromEntries(await request.formData()));
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
     setActiveLeagueCookie(response, request, String(leagueId));
     return response;
   } catch (error) {
-    return redirectWith(request, "/leagues", "error", error instanceof Error ? error.message : "Could not join the league.");
+    const message = error instanceof Error ? error.message : "Could not join the league.";
+    return redirectWith(request, "/leagues", "error", friendlyDisplayNameError(message));
   }
 }
