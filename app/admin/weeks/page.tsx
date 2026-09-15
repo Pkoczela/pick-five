@@ -57,7 +57,9 @@ export default async function AdminWeeksPage({ searchParams }: { searchParams: P
             </form>
           </div>
 
-          <section className="game-admin-list">
+          <form action="/api/admin/line" method="post" className="bulk-line-form">
+            <input type="hidden" name="weekId" value={week.id} />
+            <section className="game-admin-list">
             {games.length === 0 ? <div className="coming-panel">Import the NFL schedule to begin.</div> : games.map((game) => {
               const line = game.official_lines.find((candidate) => candidate.is_current);
               return (
@@ -66,16 +68,20 @@ export default async function AdminWeeksPage({ searchParams }: { searchParams: P
                     <span>{formatDate(game.kickoff_at)}</span>
                     <strong>{game.away_team?.abbreviation} <small>at</small> {game.home_team?.abbreviation}</strong>
                   </div>
-                  <form action="/api/admin/line" method="post" className="line-form">
+                  <div className="line-form">
                     <input type="hidden" name="gameId" value={game.id} />
                     <label className="field"><span>Home spread</span><input name="homeSpread" type="number" step="0.5" defaultValue={line?.home_spread ?? ""} placeholder="−3.5" required /></label>
-                    {week.status !== "DRAFT" ? <label className="field"><span>Reason for change</span><input name="reason" placeholder="Required after entries exist" /></label> : null}
-                    <button type="submit" className="button button-quiet">Save line</button>
-                  </form>
+                  </div>
                 </article>
               );
             })}
-          </section>
+            </section>
+            {games.length > 0 ? <div className="spread-save-panel">
+              <div><strong>Save every spread</strong><span>All edited lines are saved together.</span></div>
+              {week.status !== "DRAFT" ? <label className="field"><span>Reason for changes</span><input name="reason" placeholder="Required after entries exist" /></label> : null}
+              <button type="submit" className="button button-primary">Save all spreads</button>
+            </div> : null}
+          </form>
 
           {week.status === "DRAFT" && games.length > 0 ? (
             <form action="/api/admin/week/publish" method="post" className="publish-panel">
