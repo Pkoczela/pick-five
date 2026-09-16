@@ -21,6 +21,7 @@ type HistoricalEntry = {
 type HistoricalResult = {
   entry_id: string;
   week_id: string;
+  league_member_id: string;
   correct_count: number;
   push_count: number;
   incorrect_count: number;
@@ -56,7 +57,7 @@ export default async function HistoryPage() {
     ? await Promise.all([
         supabase
           .from("weekly_player_results")
-          .select("entry_id, week_id, correct_count, push_count, incorrect_count, void_count, tiebreaker_prediction, tiebreaker_actual, tiebreaker_error, is_five_and_zero, is_winner, winnings_cents, league_member:league_members(display_name)")
+          .select("entry_id, week_id, league_member_id, correct_count, push_count, incorrect_count, void_count, tiebreaker_prediction, tiebreaker_actual, tiebreaker_error, is_five_and_zero, is_winner, winnings_cents, league_member:league_members(display_name)")
           .in("week_id", weekIds),
         supabase
           .from("entries")
@@ -82,7 +83,8 @@ export default async function HistoryPage() {
           {weeks.map((week) => {
             const weekResults = results
               .filter((result) => result.week_id === week.id)
-              .sort((a, b) => Number(b.is_winner) - Number(a.is_winner)
+              .sort((a, b) => Number(b.league_member_id === context.memberId) - Number(a.league_member_id === context.memberId)
+                || Number(b.is_winner) - Number(a.is_winner)
                 || b.correct_count - a.correct_count
                 || (a.tiebreaker_error ?? Number.MAX_SAFE_INTEGER) - (b.tiebreaker_error ?? Number.MAX_SAFE_INTEGER)
                 || (a.league_member?.display_name ?? "").localeCompare(b.league_member?.display_name ?? ""));
