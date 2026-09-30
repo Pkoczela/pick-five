@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { calculateWeeklyFinancials, validatePayoutAllocations } from "@/lib/domain/financials";
+import { calculateEntryFeeDue, calculateWeeklyFinancials, validatePayoutAllocations } from "@/lib/domain/financials";
+
+describe("calculateEntryFeeDue", () => {
+  it("adds every fee missed during the active rollover run", () => {
+    expect(calculateEntryFeeDue(1000, [1000, 1500])).toBe(3500);
+  });
+
+  it("charges only the current fee after a winner resets the run", () => {
+    expect(calculateEntryFeeDue(1000, [])).toBe(1000);
+  });
+});
 
 describe("calculateWeeklyFinancials", () => {
   it("pays the contribution to a winner", () => {
@@ -34,6 +44,21 @@ describe("calculateWeeklyFinancials", () => {
       rolloverInCents: 5000,
       resolution: "NO_WINNER",
     })).toMatchObject({ finalContributionCents: 0, rolloverOutCents: 5000 });
+  });
+
+  it("uses catch-up fee obligations in the calculated contribution", () => {
+    expect(calculateWeeklyFinancials({
+      participatingEntries: 3,
+      defaultEntryFeeCents: 1000,
+      calculatedContributionCents: 5000,
+      rolloverInCents: 6000,
+      resolution: "NO_WINNER",
+    })).toMatchObject({
+      calculatedContributionCents: 5000,
+      finalContributionCents: 5000,
+      availableJackpotCents: 11000,
+      rolloverOutCents: 11000,
+    });
   });
 });
 

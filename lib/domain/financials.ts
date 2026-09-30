@@ -1,5 +1,13 @@
 import type { WeeklyFinancialInput, WeeklyFinancialResult } from "./types";
 
+export function calculateEntryFeeDue(currentEntryFeeCents: number, missedEntryFeeCents: number[]) {
+  assertCents(currentEntryFeeCents, "currentEntryFeeCents");
+  return missedEntryFeeCents.reduce((total, fee, index) => {
+    assertCents(fee, `missedEntryFeeCents[${index}]`);
+    return safeAdd(total, fee);
+  }, currentEntryFeeCents);
+}
+
 export function calculateWeeklyFinancials(input: WeeklyFinancialInput): WeeklyFinancialResult {
   assertCents(input.defaultEntryFeeCents, "defaultEntryFeeCents");
   assertCents(input.rolloverInCents, "rolloverInCents");
@@ -7,7 +15,11 @@ export function calculateWeeklyFinancials(input: WeeklyFinancialInput): WeeklyFi
     throw new RangeError("participatingEntries must be a non-negative safe integer");
   }
 
-  const calculatedContributionCents = safeMultiply(
+  if (input.calculatedContributionCents !== undefined) {
+    assertCents(input.calculatedContributionCents, "calculatedContributionCents");
+  }
+
+  const calculatedContributionCents = input.calculatedContributionCents ?? safeMultiply(
     input.participatingEntries,
     input.defaultEntryFeeCents,
   );

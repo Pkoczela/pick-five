@@ -30,10 +30,14 @@ export default async function DashboardPage() {
     ? await supabase.rpc("week_submission_count", { p_week_id: week.id })
     : { data: 0 };
   const participatingEntries = Number(submissionCount ?? 0);
+  const { data: calculatedContribution } = week
+    ? await supabase.rpc("week_calculated_contribution", { p_week_id: week.id })
+    : { data: 0 };
   const financials = week
     ? calculateWeeklyFinancials({
         participatingEntries,
         defaultEntryFeeCents: week.default_entry_fee_cents,
+        calculatedContributionCents: Number(calculatedContribution ?? 0),
         contributionOverrideCents: week.contribution_override_cents,
         rolloverInCents: week.rollover_in_cents,
         resolution: "NO_WINNER",
@@ -41,6 +45,9 @@ export default async function DashboardPage() {
     : null;
   const { data: entry } = week
     ? await supabase.from("entries").select("id, status, submitted_at").eq("week_id", week.id).eq("league_member_id", context.memberId).maybeSingle()
+    : { data: null };
+  const { data: payment } = week
+    ? await supabase.from("payments").select("expected_cents").eq("week_id", week.id).eq("league_member_id", context.memberId).maybeSingle()
     : { data: null };
   const weekLabel = week ? effectiveLabel(week.status, week.lock_at) : null;
   const isLocked = weekLabel !== "OPEN";
@@ -57,11 +64,11 @@ export default async function DashboardPage() {
         <>
           <div className="page-heading"><div><p className="eyebrow">CURRENT POOL</p><h1>Week {week.nfl_week}</h1></div><span className="status-pill">{weekLabel}</span></div>
           <section className="dashboard-grid">
-            <article className="metric-card jackpot-card"><span>Current jackpot</span><strong>{formatMoney(financials?.availableJackpotCents ?? 0)}</strong><small>{week.contribution_override_cents !== null ? "Commissioner contribution override applied" : formatJackpotBasis(participatingEntries, week.default_entry_fee_cents, week.rollover_in_cents)}</small></article>
+            <article className="metric-card jackpot-card"><span>Current jackpot</span><strong>{formatMoney(financials?.availableJackpotCents ?? 0)}</strong><small>{week.contribution_override_cents !== null ? "Commissioner contribution override applied" : formatJackpotBasis(participatingEntries, week.default_entry_fee_cents, week.rollover_in_cents, Number(calculatedContribution ?? 0))}</small></article>
             <article className="metric-card"><span>Your entry</span><strong className="entry-state">{entry && ["SUBMITTED", "LOCKED"].includes(entry.status) ? (entry.status === "LOCKED" ? "Locked" : "Submitted") : "Not submitted"}</strong><small>{entry?.submitted_at ? `Saved ${new Date(entry.submitted_at).toLocaleString()}` : "Pick five teams before lock"}</small></article>
           </section>
           <section className="primary-action-card">
-            <div><p className="eyebrow">YOUR WEEK</p><h2>{entry ? "Your five are in." : "Ready to make your five?"}</h2><p>{formatLock(week.lock_at)}</p></div>
+            <div><p className="eyebrow">YOUR WEEK</p><h2>{entry ? "Your five are in." : "Ready to make your five?"}</h2><p>{formatLock(week.lock_at)} Entry fee {formatMoney(payment?.expected_cents ?? week.default_entry_fee_cents)}{(payment?.expected_cents ?? week.default_entry_fee_cents) > week.default_entry_fee_cents ? ", including missed fees from this rollover run." : "."}</p></div>
             <Link href={isLocked ? `/live/${week.id}` : `/picks/${week.id}`} className="button button-primary">{isLocked ? "View live pool" : entry ? "Review picks" : "Make picks"} <span aria-hidden="true">→</span></Link>
           </section>
         </>
@@ -90,8 +97,10 @@ function formatMoney(cents: number) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100);
 }
 
-function formatJackpotBasis(entries: number, feeCents: number, rolloverCents: number) {
-  const contribution = `${entries} ${entries === 1 ? "entry" : "entries"} × ${formatMoney(feeCents)}`;
+function formatJackpotBasis(entries: number, feeCents: number, rolloverCents: number, calculatedContributionCents: number) {
+  const baseContributionCents = entries * feeCents;
+  const catchUpCents = Math.max(0, calculatedContributionCents - baseContributionCents);
+  const contribution = `${entries} ${entries === 1 ? "entry" : "entries"} × ${formatMoney(feeCents)}${catchUpCents ? ` + ${formatMoney(catchUpCents)} catch-up` : ""}`;
   return rolloverCents > 0 ? `${contribution} + ${formatMoney(rolloverCents)} rollover` : contribution;
 }
 

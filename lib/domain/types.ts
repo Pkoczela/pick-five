@@ -34,6 +34,7 @@ export type FinancialResolution = "WINNER" | "NO_WINNER";
 export type WeeklyFinancialInput = {
   participatingEntries: number;
   defaultEntryFeeCents: number;
+  calculatedContributionCents?: number;
   contributionOverrideCents?: number | null;
   rolloverInCents: number;
   resolution: FinancialResolution;

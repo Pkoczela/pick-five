@@ -37,7 +37,9 @@ Pure inputs:
 
 Calculations:
 
-- `calculated_contribution = participating_entries × default_entry_fee`;
+- `calculated_contribution = sum of each participating player's current fee obligation`;
+- during a no-winner rollover run, a returning player's obligation includes the fees for finalized weeks they skipped since the most recent winner;
+- a winning week resets that catch-up window, and skipped fees are never charged unless the player enters again during the same rollover run;
 - `final_contribution = override ?? calculated_contribution`;
 - available jackpot is rollover in plus final contribution;
 - a winner payout consumes the jackpot and sets rollover out to zero;

@@ -424,7 +424,7 @@ button { color: inherit; -webkit-appearance: none; appearance: none; }
 .data-row { min-height: 62px; padding: 12px 18px; display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 16px; align-items: center; border-top: 1px solid var(--line); font-size: .88rem; }
 .data-row:first-child { border-top: 0; }
 .data-head { min-height: 44px; color: var(--ink-soft); background: var(--paper-deep); font-size: .7rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
-.payment-row { grid-template-columns: 1.5fr .7fr 1fr; }
+.payment-row { grid-template-columns: 1.25fr .9fr 1fr 1fr; }
 .payment-row form { justify-self: end; }
 .payment-row button { min-height: 40px; padding-inline: 14px; background: transparent; cursor: pointer; }
 .submission-row { grid-template-columns: 1.25fr .65fr .9fr .45fr .65fr; }.submission-row>a{color:var(--orange);font-weight:800;text-underline-offset:4px}

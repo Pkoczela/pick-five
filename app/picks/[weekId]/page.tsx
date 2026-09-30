@@ -16,7 +16,7 @@ export default async function PicksPage({ params }: { params: Promise<{ weekId: 
   const { weekId } = await params;
   const context = await requireLeagueContext();
   const supabase = await createUserClient();
-  const { data: rawWeek } = await supabase.from("weeks").select("id, nfl_week, status, lock_at, tiebreaker_game_id, season:seasons!inner(league_id)").eq("id", weekId).maybeSingle();
+  const { data: rawWeek } = await supabase.from("weeks").select("id, nfl_week, status, lock_at, tiebreaker_game_id, default_entry_fee_cents, season:seasons!inner(league_id)").eq("id", weekId).maybeSingle();
   const week = rawWeek as unknown as (typeof rawWeek & { season: { league_id: string } | null }) | null;
   if (!week || !week.lock_at || week.status === "DRAFT" || week.season?.league_id !== context.leagueId) notFound();
   const { data: rawGames } = await supabase.from("games").select("id, kickoff_at, home_team:teams!games_home_team_id_fkey(abbreviation, display_name), away_team:teams!games_away_team_id_fkey(abbreviation, display_name), official_lines(home_spread, is_current)").eq("week_id", weekId).eq("is_selectable", true).order("kickoff_at");
@@ -27,6 +27,7 @@ export default async function PicksPage({ params }: { params: Promise<{ weekId: 
     return [{ id: row.id, kickoffAt: row.kickoff_at, home: { abbreviation: row.home_team.abbreviation, displayName: row.home_team.display_name }, away: { abbreviation: row.away_team.abbreviation, displayName: row.away_team.display_name }, homeSpread: Number(line.home_spread) }];
   });
   const { data: entry } = await supabase.from("entries").select("id, tiebreaker_points").eq("week_id", weekId).eq("league_member_id", context.memberId).maybeSingle();
+  const { data: payment } = await supabase.from("payments").select("expected_cents").eq("week_id", weekId).eq("league_member_id", context.memberId).maybeSingle();
   const { data: existing } = entry ? await supabase.from("picks").select("game_id, selected_side").eq("entry_id", entry.id) : { data: null };
   const initialPicks = Object.fromEntries((existing ?? []).map((pick) => [pick.game_id, pick.selected_side])) as Record<string, "HOME" | "AWAY">;
   const tiebreaker = games.find((game) => game.id === week.tiebreaker_game_id);
@@ -37,8 +38,12 @@ export default async function PicksPage({ params }: { params: Promise<{ weekId: 
       <Link href="/dashboard" className="back-link">← This week</Link>
       <p className="eyebrow">PICK FIVE · WEEK {week.nfl_week}</p>
       <h1>{locked ? "Your picks." : "Make your five."}</h1>
-      <p className="page-lede">Choose one side from five different games. The pool’s official lines are frozen for this week.</p>
+      <p className="page-lede">Choose one side from five different games. The pool’s official lines are frozen for this week. Your entry fee is {formatMoney(payment?.expected_cents ?? week.default_entry_fee_cents)}{(payment?.expected_cents ?? week.default_entry_fee_cents) > week.default_entry_fee_cents ? ", including the weeks you missed during the current rollover run." : "."}</p>
       <PickForm weekId={week.id} weekNumber={week.nfl_week} games={games} initialPicks={initialPicks} initialTiebreaker={entry?.tiebreaker_points ?? null} tiebreakerLabel={tiebreaker ? `${tiebreaker.away.abbreviation} at ${tiebreaker.home.abbreviation}` : "Designated game"} lockAt={week.lock_at} locked={locked} />
     </main>
   );
+}
+
+function formatMoney(cents: number) {
+  return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100);
 }
