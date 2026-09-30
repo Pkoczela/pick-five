@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./redesign.css";
+import { isPreviewMode } from "@/lib/preview-mode";
+import { PreviewApp } from "@/components/preview-app";
 
 export const metadata: Metadata = {
   title: {
@@ -19,7 +22,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>{isPreviewMode() ? <PreviewApp /> : null}{children}</body>
     </html>
   );
 }
