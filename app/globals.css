@@ -382,7 +382,10 @@ button { color: inherit; -webkit-appearance: none; appearance: none; }
 .team-option b { font-size: 1.05rem; }
 .team-option small { color: var(--ink-soft); }
 .team-option > strong { font-family: "SFMono-Regular", Consolas, monospace; }
-.team-option:hover:not(:disabled) { background: #faf8ef; }
+/* Touch browsers may retain :hover after a tap. Never let hover hide a pick. */
+@media (hover: hover) and (pointer: fine) {
+  .team-option:not(.selected):hover:not(:disabled) { background: #faf8ef; }
+}
 .team-option.selected { color: var(--ink); background: var(--lime); }
 .team-option.selected small { color: rgba(16,40,31,0.72); }
 .tiebreaker-card { margin: 15px 0; padding: 28px; border: 1px solid var(--line); border-radius: 8px; background: var(--white); }

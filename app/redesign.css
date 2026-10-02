@@ -139,7 +139,6 @@ input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--ink); flex
 .team-price small { font-size: .61rem; }
 .team-option.selected { background: #e5efbb; }
 .team-option.selected .team-code { background: var(--lime); border-color: #b5c85b; }
-.team-option.selected:hover:not(:disabled) { background: #dceca7; }
 .team-option:focus-visible { outline-offset: -4px; position: relative; z-index: 1; }
 .team-option:disabled { opacity: 1; cursor: default; }
 .tiebreaker-card { padding: 26px; border-radius: var(--radius); scroll-margin-top: 20px; }
