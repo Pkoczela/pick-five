@@ -10,8 +10,11 @@ PICK_FIVE_PREVIEW=1 npm run dev -- --port 3106
 
 Every Vercel Preview deployment runs in this mode automatically. Production (`VERCEL_ENV=production`) never does, even with the flag set.
 
+There is no login in the preview: every page behaves as if the sample player Alex Morgan is signed in. Submitting the log in, join, or create-league form takes you into the sample league.
+
 The bar at the top of every page controls the sample league:
 
+- **Screen**: jump to any page, including the logged-out landing and auth pages.
 - **Scenario**: Open, Submitted, Locked, Live, Final, Empty (new season, no data), Error (renders the real error boundary), Loading (holds every page in the real loading state).
 - **Role**: Commissioner or Player. Players are redirected away from commissioner pages exactly as in production.
 - **Fail saves**: makes the next pick submission fail, to review recovery.
