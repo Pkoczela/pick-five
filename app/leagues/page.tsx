@@ -1,68 +1,48 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { AppShell } from "@/components/app-shell";
+import { LeaguesView, type LeaguesData } from "@/components/views/leagues-view";
 import { ACTIVE_LEAGUE_COOKIE } from "@/lib/auth/active-league";
 import { selectActiveMembership } from "@/lib/auth/membership-selection";
+import { isPreviewMode } from "@/lib/preview-mode";
+import { getPreviewState } from "@/lib/preview/server";
+import { sampleLeagues } from "@/lib/preview/sample";
 import { createUserClient } from "@/lib/supabase/server";
 
-type Membership = {
-  id: string;
-  display_name: string;
-  role: "OWNER" | "COMMISSIONER" | "PLAYER";
-  league: { id: string; name: string } | null;
-};
+type Membership = { id: string; display_name: string; role: "OWNER" | "COMMISSIONER" | "PLAYER"; league: { id: string; name: string } | null };
 
-export default async function LeaguesPage({ searchParams }: { searchParams: Promise<{ error?: string; notice?: string }> }) {
+export default async function LeaguesPage({ searchParams }: PageProps<"/leagues">) {
   const params = await searchParams;
+  const flash = { error: typeof params.error === "string" ? params.error : undefined, notice: typeof params.notice === "string" ? params.notice : undefined };
+  const data: LeaguesData = isPreviewMode() ? { ...sampleLeagues(await getPreviewState()), ...flash } : { ...await loadLeagues(), ...flash };
+  const active = data.memberships.find((membership) => membership.leagueId === data.activeLeagueId);
+  if (!active) {
+    return (
+      <div className="app-frame">
+        <header className="app-header"><Link href="/" className="wordmark"><span className="mark" aria-hidden="true">5</span><span>PICK FIVE</span></Link></header>
+        <main className="solo-main" id="main-content"><LeaguesView {...data} /></main>
+      </div>
+    );
+  }
+  return (
+    <AppShell leagueName={active.leagueName} displayName={active.displayName} isAdmin={active.role !== "PLAYER"} leagueCount={data.memberships.length}>
+      <LeaguesView {...data} />
+    </AppShell>
+  );
+}
+
+async function loadLeagues(): Promise<Omit<LeaguesData, "error" | "notice">> {
   const supabase = await createUserClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
   const { data } = await supabase.from("league_members").select("id,display_name,role,created_at,league:leagues(id,name)").eq("user_id", user.id).eq("active", true).order("created_at");
   const memberships = (data ?? []) as unknown as Membership[];
-  const requestedLeagueId = (await cookies()).get(ACTIVE_LEAGUE_COOKIE)?.value;
-  const activeLeagueId = selectActiveMembership(memberships, requestedLeagueId)?.league?.id;
+  const activeLeagueId = selectActiveMembership(memberships, (await cookies()).get(ACTIVE_LEAGUE_COOKIE)?.value)?.league?.id ?? null;
   const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-
-  return (
-    <main className="standalone-page league-hub">
-      {memberships.length ? <Link href="/dashboard" className="back-link">← Current pool</Link> : <Link href="/" className="back-link">← Pick Five</Link>}
-      <p className="eyebrow">YOUR POOLS</p>
-      <h1>Choose your league.</h1>
-      <p className="page-lede">One account can play in or run as many Pick Five leagues as you need.</p>
-      {params.error ? <p className="form-message form-error">{params.error}</p> : null}
-      {params.notice ? <p className="form-message form-notice">{params.notice}</p> : null}
-
-      <section className="league-list" aria-label="League memberships">
-        {memberships.map((membership) => membership.league ? (
-          <article className={membership.league.id === activeLeagueId ? "league-card league-card-active" : "league-card"} key={membership.id}>
-            <div className="league-card-copy"><span>{membership.role}</span><h2>{membership.league.name}</h2><p>Playing as {membership.display_name}</p>
-              <details className="edit-pool-name"><summary>Change display name</summary>
-                <form action="/api/leagues/display-name" method="post">
-                  <input type="hidden" name="memberId" value={membership.id}/>
-                  <label><span className="sr-only">Display name in {membership.league.name}</span><input name="displayName" defaultValue={membership.display_name} required minLength={2} maxLength={40}/></label>
-                  <button type="submit">Save name</button>
-                </form>
-              </details>
-            </div>
-            {membership.league.id === activeLeagueId ? <strong>Current pool</strong> : <form action="/api/leagues/switch" method="post"><input type="hidden" name="leagueId" value={membership.league.id}/><button className="button button-primary" type="submit">Open pool</button></form>}
-          </article>
-        ) : null)}
-      </section>
-
-      <section className="league-actions">
-        <form action="/api/leagues/join" method="post" className="panel league-action-form">
-          <div><p className="eyebrow">JOIN ANOTHER</p><h2>Use an invite code.</h2><p>Your existing username and password stay the same.</p></div>
-          <label className="field"><span>League code</span><input name="inviteCode" autoCapitalize="characters" autoComplete="off" required minLength={6} placeholder="ABCD-EFGH"/></label>
-          <label className="field"><span>Display name in this pool</span><input name="displayName" defaultValue={profile?.display_name ?? ""} required minLength={2} maxLength={40}/></label>
-          <button className="button button-primary" type="submit">Join league</button>
-        </form>
-        <form action="/api/leagues/create" method="post" className="panel league-action-form">
-          <div><p className="eyebrow">START ANOTHER</p><h2>Create a league.</h2><p>You’ll be its owner and receive a new reusable invite code.</p></div>
-          <label className="field"><span>League name</span><input name="leagueName" required minLength={2} maxLength={60} placeholder="Sunday Pick Five"/></label>
-          <label className="field"><span>Your display name</span><input name="displayName" defaultValue={profile?.display_name ?? ""} required minLength={2} maxLength={40}/></label>
-          <button className="button button-primary" type="submit">Create league</button>
-        </form>
-      </section>
-    </main>
-  );
+  return {
+    memberships: memberships.flatMap((membership) => membership.league ? [{ id: membership.id, leagueId: membership.league.id, leagueName: membership.league.name, role: membership.role, displayName: membership.display_name }] : []),
+    activeLeagueId,
+    profileName: profile?.display_name ?? "",
+  };
 }

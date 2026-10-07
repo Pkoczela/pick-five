@@ -5,7 +5,7 @@ import { proxy } from "@/proxy";
 import { createUserClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-vi.mock("next/headers", () => ({ cookies: async () => ({ getAll: () => [] }) }));
+vi.mock("next/headers", () => ({ cookies: async () => ({ getAll: () => [], get: () => undefined }) }));
 const createClient = vi.hoisted(() => vi.fn(() => { throw new Error("A database client was initialized"); }));
 vi.mock("@supabase/ssr", () => ({ createServerClient: createClient }));
 vi.mock("@supabase/supabase-js", () => ({ createClient }));
@@ -42,10 +42,18 @@ describe("sample preview database isolation", () => {
       expect((await proxy(new NextRequest(`https://preview.example${path}`, { method }))).status).toBe(403);
     }
   });
-  it("rewrites commissioner entry reads to synthetic UI, preventing audited production reads", async () => {
+  it("lets page reads through so real pages render sample data", async () => {
     vi.stubEnv("VERCEL_ENV", "preview");
     const result = await proxy(new NextRequest("https://preview.example/admin/entries/person?weekId=week"));
-    expect(result.headers.get("x-middleware-rewrite")).toBe("https://preview.example/preview/admin/entries/person?weekId=week");
+    expect(result.status).toBe(200);
+    expect(result.headers.get("x-middleware-rewrite")).toBeNull();
+    expect(createClient).not.toHaveBeenCalled();
+  });
+  it("resolves the league context from sample data without touching the database", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const { requireLeagueContext } = await import("@/lib/auth/context");
+    const context = await requireLeagueContext();
+    expect(context.leagueId).toBe("sample-league");
     expect(createClient).not.toHaveBeenCalled();
   });
 });

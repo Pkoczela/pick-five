@@ -1,34 +1,43 @@
-# Pick Five UI/UX prototype
+# Design preview
 
-Branch: `codex/ui-ux-redesign`. Do not merge or deploy to production without approval.
+The design preview runs the **real application** (same pages, components, and CSS) with a fictional league instead of Supabase. Whatever you see in the preview is exactly what ships when the branch merges.
 
-## Direction and audit
+## Running it
 
-Preserve the Pick Five wordmark and forest-green / cream / orange identity. Add consistent design tokens, high-contrast actions, restrained lime highlights, unified cards, clear status labels, and reusable headings, notices and result cards.
+```bash
+PICK_FIVE_PREVIEW=1 npm run dev -- --port 3106
+```
 
-The original screens have inconsistent page-level navigation, dense commissioner tables, limited submission guidance, and inconsistent form/status treatment. Mobile users need larger targets, persistent navigation, a visible deadline and submission summary, and easier historical-week browsing. The original stacked matchup choices consume too much phone screen space: the prototype puts the teams side by side below 761px and keeps desktop choices stacked.
+Every Vercel Preview deployment runs in this mode automatically. Production (`VERCEL_ENV=production`) never does, even with the flag set.
 
-## Safety architecture
+The bar at the top of every page controls the sample league:
 
-- Every Vercel Preview deployment automatically uses fictional data. Production cannot be switched into sample mode with the local flag.
-- Proxy rewrites player, auth and commissioner pages to the sample application. API requests and non-GET/HEAD requests receive 403.
-- Both Supabase client factories are additionally blocked at environment resolution in preview mode. No production credentials are needed for local testing.
-- Sample saves, payment state, publishing and audit events stay in sessionStorage in the current browser tab. Reset clears only the prototype's keys.
-- No database migrations, game-rule changes, auth changes or permission changes are part of this work. The existing production endpoints remain intact.
+- **Scenario**: Open, Submitted, Locked, Live, Final, Empty (new season, no data), Error (renders the real error boundary), Loading (holds every page in the real loading state).
+- **Role**: Commissioner or Player. Players are redirected away from commissioner pages exactly as in production.
+- **Fail saves**: makes the next pick submission fail, to review recovery.
+- **Reset**: clears all preview state.
 
-Local: `PICK_FIVE_PREVIEW=1 npm run dev -- --port 3106`.
+Picks you submit are kept in a browser cookie and flow through the dashboard, live board, and commissioner entry list. Commissioner forms (payments, spreads, publish, etc.) post to `/api/*`; the preview intercepts them and explains that server actions are disabled.
 
-## What to review
+## How it works
 
-Start with This week, select five teams, enter a tiebreaker, submit, and return to the dashboard. Use the failed-save checkbox to explore recovery. Change View to Submitted, Locked, Live, Final, Empty, Error or Loading. Use More → Commissioner on mobile to explore setup, entries, payments, results, players and audit. History has older/newer controls and a rollover example. Switch Role to Player to see the player-only view.
+Each page is split into a **loader** and a **view**:
 
-This is a visual/interaction prototype, not a replacement backend: some commissioner forms demonstrate validation and confirmation without applying changes to all related sample fixtures. Sample season totals and historical matchups are illustrative. Real authentication, provider imports, settlement, and database authorization require a separate test environment before production integration. No production write testing was performed.
+```
+app/<route>/page.tsx          picks a data source, renders the view
+lib/data/<route>.ts           production loader (Supabase)
+lib/preview/sample.ts         preview loader (fictional league)
+components/views/<route>.tsx  presentation only: plain props in, markup out
+```
 
-## Verification
+To change the design, edit the view or `app/globals.css`, check it in the preview, and merge. To add data a view needs, add it to the view's props type: TypeScript then requires both the production loader and the sample to supply it.
 
-- ESLint, TypeScript and optimized Next build pass.
-- 78 automated tests pass, including existing rule/permission tests and 26 preview-isolation tests.
-- Browser checks: phone and desktop matchup geometry, five-pick limit, required tiebreaker, failed save/retry, saved-state navigation, historical paging/rollover, sample publish confirmation, payment updates, audit persistence, and player access boundary.
-- Viewports include 320px, 390px and 1440px. These are browser viewport checks, not physical iPhone/Safari certification.
+## Safety
 
-Keep feedback and subsequent design iterations on this branch. A production rollout needs explicit approval and integration/QA against a separate test Supabase environment.
+- `lib/preview-mode.ts` decides preview mode from the environment only.
+- In preview mode the proxy returns 403 for every `/api/*` request and every non-GET/HEAD request, and both Supabase client factories throw before reading credentials (`tests/preview-safety.test.ts`).
+- `requireLeagueContext` returns the sample context in preview mode, so no page can fall through to a database query.
+
+## Theme
+
+Colours are tokens on `:root` in `app/globals.css`; dark mode only redefines tokens. Players choose Match device / Light / Dark under **More → Appearance**; the choice is stored in the `pf_theme` cookie so the server renders the right theme on first paint.
