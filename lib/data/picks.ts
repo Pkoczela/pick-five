@@ -34,13 +34,15 @@ export async function loadCommissionerEntry(context: LeagueContext, weekId: stri
 }
 
 async function loadWeek(supabase: Client, weekId: string, leagueId: string) {
-  const { data } = await supabase.from("weeks").select("id, nfl_week, status, lock_at, tiebreaker_game_id, season:seasons!inner(league_id)").eq("id", weekId).maybeSingle();
-  const week = data as unknown as { id: string; nfl_week: number; status: string; lock_at: string | null; tiebreaker_game_id: string | null; season: { league_id: string } | null } | null;
+  const { data } = await supabase.from("weeks").select("id, nfl_week, status, lock_at, tiebreaker_game_id, default_entry_fee_cents, season:seasons!inner(league_id)").eq("id", weekId).maybeSingle();
+  const week = data as unknown as { id: string; nfl_week: number; status: string; lock_at: string | null; default_entry_fee_cents: number; tiebreaker_game_id: string | null; season: { league_id: string } | null } | null;
   if (!week || !week.lock_at || week.status === "DRAFT" || week.season?.league_id !== leagueId) return null;
   return { ...week, lock_at: week.lock_at };
 }
 
-async function loadEntry(supabase: Client, week: { id: string; nfl_week: number; lock_at: string; tiebreaker_game_id: string | null }, memberId: string): Promise<Omit<PicksData, "locked">> {
+async function loadEntry(supabase: Client, week: { id: string; nfl_week: number; lock_at: string; default_entry_fee_cents: number; tiebreaker_game_id: string | null }, memberId: string): Promise<Omit<PicksData, "locked">> {
+  const { data: payment, error } = await supabase.from("payments").select("expected_cents").eq("week_id", week.id).eq("league_member_id", memberId).maybeSingle();
+  if (error) throw new Error("Unable to load the entry fee.");
   const { data: rawGames } = await supabase.from("games").select("id, kickoff_at, home_team:teams!games_home_team_id_fkey(abbreviation, display_name), away_team:teams!games_away_team_id_fkey(abbreviation, display_name), official_lines(home_spread, is_current)").eq("week_id", week.id).eq("is_selectable", true).order("kickoff_at");
   const games: PickGame[] = ((rawGames ?? []) as unknown as GameRow[]).flatMap((row) => {
     const line = row.official_lines.find((candidate) => candidate.is_current);
@@ -53,6 +55,8 @@ async function loadEntry(supabase: Client, week: { id: string; nfl_week: number;
   return {
     weekId: week.id,
     weekNumber: week.nfl_week,
+    entryFeeCents: payment?.expected_cents ?? week.default_entry_fee_cents,
+    baseFeeCents: week.default_entry_fee_cents,
     lockAt: week.lock_at,
     games,
     initialPicks: Object.fromEntries((existing ?? []).map((pick) => [pick.game_id, pick.selected_side])) as Record<string, "HOME" | "AWAY">,

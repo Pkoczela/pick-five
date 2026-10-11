@@ -8,7 +8,8 @@ import type { ResultsData } from "@/components/views/admin/results-view";
 import type { SubmissionsData } from "@/components/views/admin/submissions-view";
 import type { WeeksData } from "@/components/views/admin/weeks-view";
 import type { LeagueContext } from "@/lib/auth/context";
-import { INVITE_CODE_COOKIE } from "@/lib/auth/invite-code-cookie";
+import { inviteCodeForLeague } from "@/lib/auth/invite-code-cookie";
+import { loadContribution } from "@/lib/data/contribution";
 import { humanize } from "@/lib/format";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createUserClient } from "@/lib/supabase/server";
@@ -62,12 +63,16 @@ export async function loadPayments(context: LeagueContext, flash: Flash): Promis
   const supabase = await createUserClient();
   const week = await latestPublishedWeek(supabase, context.leagueId);
   const { data: members } = await supabase.from("league_members").select("id, display_name").eq("league_id", context.leagueId).eq("active", true).order("display_name");
-  const { data: payments } = week ? await supabase.from("payments").select("league_member_id, status").eq("week_id", week.id) : { data: null };
-  const paid = new Set((payments ?? []).filter((payment) => payment.status === "PAID").map((payment) => payment.league_member_id));
+  const { data: payments, error } = week ? await supabase.from("payments").select("league_member_id, status, expected_cents, received_cents").eq("week_id", week.id) : { data: null, error: null };
+  if (error) throw new Error("Unable to load payments.");
+  const byMember = new Map((payments ?? []).map((payment) => [payment.league_member_id, payment]));
   return {
     ...flash,
     week: week ? { id: week.id, number: week.nfl_week, feeCents: week.default_entry_fee_cents } : null,
-    members: (members ?? []).map((member) => ({ id: member.id, name: member.display_name, paid: paid.has(member.id) })),
+    members: (members ?? []).map((member) => {
+      const payment = byMember.get(member.id);
+      return { id: member.id, name: member.display_name, status: payment?.status ?? "UNPAID", expectedCents: payment?.expected_cents ?? week?.default_entry_fee_cents ?? 0, receivedCents: payment?.received_cents ?? 0 };
+    }),
   };
 }
 
@@ -101,7 +106,7 @@ export async function loadPlayers(context: LeagueContext, flash: Flash): Promise
     isOwner: context.role === "OWNER",
     currentMemberId: context.memberId,
     inviteHint: invite?.code_hint ?? null,
-    rotatedCode: (await cookies()).get(INVITE_CODE_COOKIE)?.value,
+    rotatedCode: inviteCodeForLeague(await cookies(), context.leagueId),
     members: (members ?? []).map((member) => ({ id: member.id, name: member.display_name, role: member.role, active: member.active })),
   };
 }
@@ -118,13 +123,12 @@ export async function loadResults(context: LeagueContext, flash: Flash): Promise
   const week = reopened[0] ?? weekRows?.at(-1);
   if (!week) return { ...flash, seasonYear: season?.year ?? null, week: null, laterReopenedWeeks: 0, games: [], tied: [], simulationEntries: [] };
 
-  const [{ data: rawGames }, { count: entryCount }, { data: rawTied }, { data: rawSimulation }] = await Promise.all([
+  const [{ data: rawGames }, calculated, { data: rawTied }, { data: rawSimulation }] = await Promise.all([
     supabase.from("games").select("id, status, home_score, away_score, home_team:teams!games_home_team_id_fkey(abbreviation), away_team:teams!games_away_team_id_fkey(abbreviation), game_results(ats_result)").eq("week_id", week.id).order("kickoff_at"),
-    supabase.from("entries").select("id", { count: "exact", head: true }).eq("week_id", week.id).in("status", ["SUBMITTED", "LOCKED"]),
+    loadContribution(supabase, week.id),
     week.status === "TIE_REQUIRES_COMMISSIONER" ? supabase.from("weekly_player_results").select("league_member_id, tiebreaker_error, league_member:league_members(display_name)").eq("week_id", week.id).eq("is_five_and_zero", true) : Promise.resolve({ data: null }),
     week.test_lock_active ? supabase.from("entries").select("id, league_member:league_members(display_name), picks(id)").eq("week_id", week.id).in("status", ["SUBMITTED", "LOCKED"]) : Promise.resolve({ data: null }),
   ]);
-  const calculated = (entryCount ?? 0) * week.default_entry_fee_cents;
   return {
     ...flash,
     seasonYear: season?.year ?? null,

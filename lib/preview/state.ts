@@ -15,9 +15,10 @@ export type PreviewState = {
   role: PreviewRole;
   failSaves: boolean;
   entry: PreviewEntry | null;
+  formRevision: number;
 };
 
-export const defaultPreviewState: PreviewState = { scenario: "Open", role: "OWNER", failSaves: false, entry: null };
+export const defaultPreviewState: PreviewState = { scenario: "Open", role: "OWNER", failSaves: false, entry: null, formRevision: 0 };
 
 export function parsePreviewState(raw: string | undefined): PreviewState {
   if (!raw) return defaultPreviewState;
@@ -28,6 +29,7 @@ export function parsePreviewState(raw: string | undefined): PreviewState {
       role: value.role === "PLAYER" ? "PLAYER" : "OWNER",
       failSaves: value.failSaves === true,
       entry: isEntry(value.entry) ? value.entry : null,
+      formRevision: Number.isSafeInteger(value.formRevision) && value.formRevision! >= 0 ? value.formRevision! : 0,
     };
   } catch {
     return defaultPreviewState;

@@ -2,7 +2,8 @@ import "server-only";
 import { cookies } from "next/headers";
 import type { DashboardData } from "@/components/views/dashboard-view";
 import type { LeagueContext } from "@/lib/auth/context";
-import { INVITE_CODE_COOKIE, INVITE_LEAGUE_COOKIE } from "@/lib/auth/invite-code-cookie";
+import { inviteCodeForLeague } from "@/lib/auth/invite-code-cookie";
+import { loadContribution } from "@/lib/data/contribution";
 import { calculateWeeklyFinancials } from "@/lib/domain/financials";
 import { computeStandings, type WeeklyResult } from "@/lib/domain/standings";
 import { formatMoney, humanize } from "@/lib/format";
@@ -10,7 +11,7 @@ import { createUserClient } from "@/lib/supabase/server";
 
 export async function loadDashboard(context: LeagueContext): Promise<DashboardData> {
   const cookieStore = await cookies();
-  const inviteCode = cookieStore.get(INVITE_LEAGUE_COOKIE)?.value === context.leagueId ? cookieStore.get(INVITE_CODE_COOKIE)?.value : undefined;
+  const inviteCode = inviteCodeForLeague(cookieStore, context.leagueId);
   const supabase = await createUserClient();
   const { data: seasons } = await supabase.from("seasons").select("id").eq("league_id", context.leagueId).eq("status", "ACTIVE").limit(1);
   const seasonId = seasons?.[0]?.id;
@@ -20,14 +21,17 @@ export async function loadDashboard(context: LeagueContext): Promise<DashboardDa
   const week = weeks?.[0];
   const lastFinal = weeks?.find((candidate) => candidate.status === "FINAL" && candidate.id !== week?.id) ?? (week?.status === "FINAL" ? week : undefined);
 
-  const [{ data: submissionCount }, { count: memberCount }, { data: entry }, { data: rawResults }, { data: members }, { data: rawWinners }] = await Promise.all([
+  const [{ data: submissionCount }, { count: memberCount }, { data: entry }, { data: rawResults }, { data: members }, { data: rawWinners }, calculatedContributionCents, paymentResult] = await Promise.all([
     week ? supabase.rpc("week_submission_count", { p_week_id: week.id }) : Promise.resolve({ data: 0 }),
     supabase.from("league_members").select("id", { count: "exact", head: true }).eq("league_id", context.leagueId).eq("active", true),
     week ? supabase.from("entries").select("status, submitted_at").eq("week_id", week.id).eq("league_member_id", context.memberId).in("status", ["SUBMITTED", "LOCKED"]).maybeSingle() : Promise.resolve({ data: null }),
     seasonId ? supabase.from("weekly_player_results").select("league_member_id, week_id, correct_count, is_winner, winnings_cents, weeks!inner(season_id)").eq("weeks.season_id", seasonId) : Promise.resolve({ data: null }),
     supabase.from("league_members").select("id, display_name").eq("league_id", context.leagueId).eq("active", true),
     lastFinal ? supabase.from("weekly_player_results").select("league_member:league_members(display_name)").eq("week_id", lastFinal.id).eq("is_winner", true) : Promise.resolve({ data: null }),
+    week ? loadContribution(supabase, week.id) : Promise.resolve(0),
+    week ? supabase.from("payments").select("expected_cents").eq("week_id", week.id).eq("league_member_id", context.memberId).maybeSingle() : Promise.resolve({ data: null, error: null }),
   ]);
+  if (paymentResult.error) throw new Error("Unable to load your entry fee.");
 
   const participatingEntries = Number(submissionCount ?? 0);
   const results = (rawResults ?? []) as unknown as WeeklyResult[];
@@ -46,8 +50,10 @@ export async function loadDashboard(context: LeagueContext): Promise<DashboardDa
       locked: statusLabel !== "OPEN",
       final: week.status === "FINAL",
       lockAt: week.lock_at,
-      jackpotCents: calculateWeeklyFinancials({ participatingEntries, defaultEntryFeeCents: week.default_entry_fee_cents, contributionOverrideCents: week.contribution_override_cents, rolloverInCents: week.rollover_in_cents, resolution: "NO_WINNER" }).availableJackpotCents,
-      jackpotBasis: week.contribution_override_cents !== null ? "Commissioner contribution override applied" : jackpotBasis(participatingEntries, week.default_entry_fee_cents, week.rollover_in_cents),
+      jackpotCents: calculateWeeklyFinancials({ participatingEntries, calculatedContributionCents, defaultEntryFeeCents: week.default_entry_fee_cents, contributionOverrideCents: week.contribution_override_cents, rolloverInCents: week.rollover_in_cents, resolution: "NO_WINNER" }).availableJackpotCents,
+      jackpotBasis: week.contribution_override_cents !== null ? "Commissioner contribution override applied" : jackpotBasis(participatingEntries, week.default_entry_fee_cents, week.rollover_in_cents, calculatedContributionCents),
+      entryFeeCents: paymentResult.data?.expected_cents ?? week.default_entry_fee_cents,
+      baseFeeCents: week.default_entry_fee_cents,
       entry: entry ? { locked: entry.status === "LOCKED", submittedAt: entry.submitted_at } : null,
       submittedCount: participatingEntries,
       memberCount: memberCount ?? 0,
@@ -67,7 +73,8 @@ function effectiveStatus(status: string, lockAt: string | null) {
   return status === "OPEN" && lockAt && Date.now() >= new Date(lockAt).getTime() ? "LOCKED" : status;
 }
 
-function jackpotBasis(entries: number, feeCents: number, rolloverCents: number) {
-  const contribution = `${entries} ${entries === 1 ? "entry" : "entries"} × ${formatMoney(feeCents)}`;
+function jackpotBasis(entries: number, feeCents: number, rolloverCents: number, calculated: number) {
+  const catchUp = Math.max(0, calculated - entries * feeCents);
+  const contribution = `${entries} ${entries === 1 ? "entry" : "entries"} × ${formatMoney(feeCents)}${catchUp ? ` + ${formatMoney(catchUp)} catch-up` : ""}`;
   return rolloverCents > 0 ? `${contribution} + ${formatMoney(rolloverCents)} rollover` : contribution;
 }

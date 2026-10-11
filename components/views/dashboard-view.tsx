@@ -15,6 +15,8 @@ export type DashboardData = {
     lockAt: string | null;
     jackpotCents: number;
     jackpotBasis: string;
+    entryFeeCents: number;
+    baseFeeCents: number;
     entry: { locked: boolean; submittedAt: string | null } | null;
     submittedCount: number;
     memberCount: number;
@@ -98,6 +100,7 @@ function CurrentWeek({ leagueName, week, season }: { leagueName: string; week: N
           <span className="card-kicker">Your entry</span>
           <h2>{entryTitle}</h2>
           <p>{entryCopy}</p>
+          <p>Entry fee {formatMoney(week.entryFeeCents)}{week.entryFeeCents > week.baseFeeCents ? ", including missed fees from this rollover run." : "."}</p>
         </div>
         <Link href={week.locked ? `/live/${week.id}` : `/picks/${week.id}`} className="button button-primary">{cta} <Icon name="arrow" /></Link>
       </section>

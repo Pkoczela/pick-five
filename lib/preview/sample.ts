@@ -135,12 +135,23 @@ const pastWeeks = [
   { number: 5, winner: WINNER, payoutCents: 16000, rolloverCents: 0 },
 ];
 
+/** One canonical set of historical picks drives both boards and standings. */
+function historicalEntries(week: (typeof pastWeeks)[number]) {
+  return people.map((_, person) => {
+    const correct = week.winner === person ? 5 : 1 + ((person * 3 + week.number * 2) % 4);
+    const picks = Object.fromEntries(atsWinners.slice(0, 5).map((winner, index) => [
+      `sample-game-${index}`, index < correct ? winner as Side : winner === "HOME" ? "AWAY" : "HOME",
+    ])) as Record<string, Side>;
+    return { person, entry: { picks, tiebreaker: 38 + person * 3 } };
+  });
+}
+
 function weeklyResults(state: PreviewState): WeeklyResult[] {
   if (phase(state) === "EMPTY") return [];
-  const results: WeeklyResult[] = pastWeeks.flatMap((week) => people.map((_, person) => ({
+  const results: WeeklyResult[] = pastWeeks.flatMap((week) => historicalEntries(week).map(({ person, entry }) => ({
     league_member_id: memberId(person),
     week_id: `sample-week-${week.number}`,
-    correct_count: week.winner === person ? 5 : 1 + ((person * 3 + week.number * 2) % 4),
+    correct_count: Object.entries(entry.picks).filter(([id, side]) => atsWinners[Number(id.split("-").at(-1))] === side).length,
     is_winner: week.winner === person,
     winnings_cents: week.winner === person ? week.payoutCents : 0,
   })));
@@ -185,6 +196,8 @@ export function sampleDashboard(state: PreviewState): DashboardData {
       lockAt: lockAt(state).toISOString(),
       jackpotCents: jackpotCents(state),
       jackpotBasis: `${count} ${count === 1 ? "entry" : "entries"} × $10`,
+      entryFeeCents: FEE_CENTS,
+      baseFeeCents: FEE_CENTS,
       entry: entry ? { locked: current !== "OPEN", submittedAt: new Date(lockAt(state).getTime() - 30 * HOUR).toISOString() } : null,
       submittedCount: count,
       memberCount: people.length,
@@ -200,6 +213,9 @@ export function samplePicks(state: PreviewState, { forOtherPlayer = false } = {}
   return {
     weekId: WEEK_ID,
     weekNumber: WEEK_NUMBER,
+    entryFeeCents: FEE_CENTS,
+    baseFeeCents: FEE_CENTS,
+    formRevision: `${state.scenario}-${state.formRevision}`,
     lockAt: lockAt(state).toISOString(),
     locked: phase(state) !== "OPEN",
     games: sampleGames,
@@ -210,11 +226,12 @@ export function samplePicks(state: PreviewState, { forOtherPlayer = false } = {}
 }
 
 export function sampleLive(state: PreviewState, weekId: string): LiveData {
-  const pastNumber = Number(weekId.match(/^sample-week-(\d)$/)?.[1]);
+  const pastNumber = Number(weekId.match(/^sample-week-(\d+)$/)?.[1]);
+  const pastWeek = pastWeeks.find((week) => week.number === pastNumber);
   // History links open earlier weeks: show them as a finished board.
-  const boardState: PreviewState = pastNumber && pastNumber < WEEK_NUMBER ? { ...state, scenario: "Final", entry: null } : state;
+  const boardState: PreviewState = pastWeek ? { ...state, scenario: "Final", entry: null } : state;
   const current = phase(boardState);
-  const boardEntries = entries(boardState).map(({ person, entry }) => {
+  const boardEntries = (pastWeek ? historicalEntries(pastWeek) : entries(boardState)).map(({ person, entry }) => {
     const picks = Object.entries(entry.picks)
       .map(([gameId, side]) => ({ gameIndex: Number(gameId.split("-").at(-1)), side }))
       .sort((a, b) => a.gameIndex - b.gameIndex)
@@ -294,7 +311,7 @@ export function samplePayments(state: PreviewState, flash: Flash): PaymentsData 
   return {
     ...flash,
     week: phase(state) === "EMPTY" ? null : { id: WEEK_ID, number: WEEK_NUMBER, feeCents: FEE_CENTS },
-    members: people.map((name, index) => ({ id: memberId(index), name, paid: PAID.has(index) })),
+    members: people.map((name, index) => ({ id: memberId(index), name, status: PAID.has(index) ? "PAID" : index === 4 ? "PARTIAL" : index === 7 ? "WAIVED" : "UNPAID", expectedCents: FEE_CENTS, receivedCents: PAID.has(index) ? FEE_CENTS : index === 4 ? 500 : 0 })),
   };
 }
 

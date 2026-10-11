@@ -10,6 +10,17 @@ The fictional feed cycles every eight seconds. Pause, advance manually, or simul
 
 Verification: 100 unit tests, lint, typecheck and optimized preview build passed. Headless Chromium checks passed at 320px, 390px and 1440px for overflow, filtering, own-card pinning, score stepping, interrupted updates, dark mode, pre-lock privacy and API isolation. Physical iPhone/Safari review remains recommended.
 
+## Audit fixes (October 11)
+
+- Payment screens use recorded expected/received amounts, including partial and waived statuses. Dashboard jackpots and commissioner payout defaults read `week_calculated_contribution`; entry screens explain assessed catch-up fees.
+- Preview scenario changes and Reset remount the pick form. Saving and toggling failure simulation preserve the current draft and save feedback. Pending sample saves cannot undo a reset.
+- Historical boards and season totals share the same per-week sample picks, matching the recap winner (or no winner).
+- Rotated invite codes are displayed only in the league that owns the cookie.
+
+The production loaders depend on the existing catch-up-fee RPC introduced on `main` by the catch-up-fee work. This change does not copy, apply, or modify database migrations, grading, or fee rules. Do not deploy this branch against an older database lacking that RPC; failures surface instead of silently displaying base-only totals. Preview mode remains sample-only and does not require the RPC.
+
+Verification: 118 tests, lint, typecheck, optimized build, and headless Chromium checks for scenario/reset, save failure/retry, historical winners, payment totals and mobile overflow. No production Supabase access was used. Real NFL feed integration and physical iPhone/Safari review remain separate.
+
 ## Running it
 
 ```bash

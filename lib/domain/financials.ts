@@ -7,7 +7,10 @@ export function calculateWeeklyFinancials(input: WeeklyFinancialInput): WeeklyFi
     throw new RangeError("participatingEntries must be a non-negative safe integer");
   }
 
-  const calculatedContributionCents = safeMultiply(
+  if (input.calculatedContributionCents !== undefined) {
+    assertCents(input.calculatedContributionCents, "calculatedContributionCents");
+  }
+  const calculatedContributionCents = input.calculatedContributionCents ?? safeMultiply(
     input.participatingEntries,
     input.defaultEntryFeeCents,
   );

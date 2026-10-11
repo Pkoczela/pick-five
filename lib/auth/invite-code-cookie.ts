@@ -3,6 +3,10 @@ import type { NextRequest, NextResponse } from "next/server";
 export const INVITE_CODE_COOKIE = "pick-five-invite-code";
 export const INVITE_LEAGUE_COOKIE = "pick-five-invite-league";
 
+export function inviteCodeForLeague(store: { get(name: string): { value: string } | undefined }, leagueId: string) {
+  return store.get(INVITE_LEAGUE_COOKIE)?.value === leagueId ? store.get(INVITE_CODE_COOKIE)?.value : undefined;
+}
+
 export function setInviteCodeCookie(response: NextResponse, request: NextRequest, code: string, leagueId: string) {
   response.cookies.set(INVITE_CODE_COOKIE, code, {
     httpOnly: true,
