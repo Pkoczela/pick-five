@@ -2,12 +2,30 @@ import { describe, expect, it } from "vitest";
 import { calculateEntryFeeDue, calculateWeeklyFinancials, validatePayoutAllocations } from "@/lib/domain/financials";
 
 describe("calculateEntryFeeDue", () => {
-  it("adds every fee missed during the active rollover run", () => {
-    expect(calculateEntryFeeDue(1000, [1000, 1500])).toBe(3500);
+  it("adds consecutive fees missed before the player's first return", () => {
+    expect(calculateEntryFeeDue(1000, [
+      { entryFeeCents: 1000, entered: false },
+      { entryFeeCents: 1500, entered: false },
+    ])).toBe(3500);
   });
 
   it("charges only the current fee after a winner resets the run", () => {
     expect(calculateEntryFeeDue(1000, [])).toBe(1000);
+  });
+
+  it("does not charge an already-assessed missed week again", () => {
+    expect(calculateEntryFeeDue(1000, [
+      { entryFeeCents: 1000, entered: false },
+      { entryFeeCents: 1000, entered: true },
+    ])).toBe(1000);
+  });
+
+  it("charges only misses after the player's most recent entry", () => {
+    expect(calculateEntryFeeDue(1000, [
+      { entryFeeCents: 1000, entered: false },
+      { entryFeeCents: 1000, entered: true },
+      { entryFeeCents: 1500, entered: false },
+    ])).toBe(2500);
   });
 });
 

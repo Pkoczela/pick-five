@@ -1,11 +1,17 @@
 import type { WeeklyFinancialInput, WeeklyFinancialResult } from "./types";
 
-export function calculateEntryFeeDue(currentEntryFeeCents: number, missedEntryFeeCents: number[]) {
+export function calculateEntryFeeDue(
+  currentEntryFeeCents: number,
+  priorWeeks: Array<{ entryFeeCents: number; entered: boolean }>,
+) {
   assertCents(currentEntryFeeCents, "currentEntryFeeCents");
-  return missedEntryFeeCents.reduce((total, fee, index) => {
-    assertCents(fee, `missedEntryFeeCents[${index}]`);
-    return safeAdd(total, fee);
-  }, currentEntryFeeCents);
+  const outstandingCatchUpCents = priorWeeks.reduce((outstanding, week, index) => {
+    assertCents(week.entryFeeCents, `priorWeeks[${index}].entryFeeCents`);
+    // A submitted entry is the point where all earlier missed fees in the
+    // active rollover run were assessed. Only misses after that return remain.
+    return week.entered ? 0 : safeAdd(outstanding, week.entryFeeCents);
+  }, 0);
+  return safeAdd(currentEntryFeeCents, outstandingCatchUpCents);
 }
 
 export function calculateWeeklyFinancials(input: WeeklyFinancialInput): WeeklyFinancialResult {
