@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { PoolBoard, type BoardEntry } from "@/components/pool-board";
+import type { BoardEntry } from "@/components/pool-board";
+import { LiveScoreboard } from "@/components/live-scoreboard";
 import { Badge, EmptyState, Notice, PageHeading, Stat } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
 
 export type LiveData = {
   week: { id: string; number: number; lockAt: string; locked: boolean; final: boolean; testLock: boolean };
   entries: BoardEntry[];
+  simulate?: boolean;
 };
 
-export function LiveView({ week, entries }: LiveData) {
+export function LiveView({ week, entries, simulate = false }: LiveData) {
   if (!week.locked) {
     return (
       <>
@@ -27,7 +29,7 @@ export function LiveView({ week, entries }: LiveData) {
         eyebrow={`Week ${week.number} · Pool board`}
         title={week.final ? "The final card." : "Everyone’s five."}
         description="A loss or push takes an entry out of the 5–0 jackpot."
-        action={<Badge tone={week.final ? "neutral" : "live"}>{week.final ? "Final" : pending ? "Games in progress" : "Picks revealed"}</Badge>}
+        action={<Badge tone={week.final ? "neutral" : "live"}>{week.final ? "Final" : entries.some(e => e.picks.some(p => p.game?.status === "IN_PROGRESS")) ? "Games in progress" : "Picks revealed"}</Badge>}
       />
       {week.testLock ? <Notice tone="info">Locked-board test is active. These are real submitted picks, temporarily revealed for testing.</Notice> : null}
       <div className="stats-strip">
@@ -35,7 +37,7 @@ export function LiveView({ week, entries }: LiveData) {
         <Stat label={week.final ? "Went 5–0" : "Still alive"} value={alive} />
         <Stat label="Picks pending" value={pending} />
       </div>
-      {entries.length ? <PoolBoard entries={entries} /> : <EmptyState title="No entries this week.">Nobody submitted picks before the deadline.</EmptyState>}
+      {entries.length ? <LiveScoreboard key={`${week.id}-${week.final}-${simulate}`} entries={entries} simulate={simulate} /> : <EmptyState title="No entries this week.">Nobody submitted picks before the deadline.</EmptyState>}
     </>
   );
 }

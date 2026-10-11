@@ -50,7 +50,7 @@ const matchups: Array<[string, string, string, string, number]> = [
 ];
 /** Against-the-spread winner of each game once it is decided. */
 const atsWinners: Array<Side | "PUSH"> = ["AWAY", "HOME", "AWAY", "AWAY", "HOME", "HOME", "PUSH", "AWAY"];
-const scores: Array<[number, number]> = [[27, 20], [24, 23], [20, 17], [31, 21], [17, 27], [14, 24], [23, 23], [24, 20]];
+const scores: Array<[number, number]> = [[27, 20], [20, 27], [20, 17], [31, 21], [17, 27], [14, 24], [23, 23], [24, 20]];
 
 type Phase = "EMPTY" | "OPEN" | "LOCKED" | "LIVE" | "FINAL";
 function phase(state: PreviewState): Phase {
@@ -220,7 +220,16 @@ export function sampleLive(state: PreviewState, weekId: string): LiveData {
       .sort((a, b) => a.gameIndex - b.gameIndex)
       .map(({ gameIndex, side }) => {
         const [away, , home, , spread] = matchups[gameIndex];
-        return { id: `${person}-${gameIndex}`, team: side === "HOME" ? home : away, spread: side === "HOME" ? spread : -spread, result: pickResult(boardState, gameIndex, side) };
+        const decided = isDecided(boardState, gameIndex);
+        const inProgress = current === "LIVE" && gameIndex >= 4 && gameIndex < 7;
+        const [awayScore, homeScore] = scores[gameIndex];
+        return { id: `${person}-${gameIndex}`, team: side === "HOME" ? home : away, spread: side === "HOME" ? spread : -spread, result: pickResult(boardState, gameIndex, side), game: {
+          id: `sample-game-${gameIndex}`, away, home, selectedSide: side,
+          status: decided ? "FINAL" as const : inProgress ? "IN_PROGRESS" as const : "SCHEDULED" as const,
+          homeScore: decided ? homeScore : inProgress ? 17 : null,
+          awayScore: decided ? awayScore : inProgress ? gameIndex === 6 ? 17 : 14 : null,
+          detail: decided ? "Final" : inProgress ? "Q3 · 6:42" : "Upcoming · sample schedule",
+        } };
       });
     const summary = summarizeLiveEntry(picks.map((pick) => pick.result));
     return { id: `entry-${person}`, name: people[person], own: person === ME, tiebreaker: entry.tiebreaker, alive: summary.aliveForFive, correct: summary.correct, picks };
@@ -228,6 +237,7 @@ export function sampleLive(state: PreviewState, weekId: string): LiveData {
   return {
     week: { id: weekId, number: pastNumber || WEEK_NUMBER, lockAt: lockAt(boardState).toISOString(), locked: current !== "OPEN" && current !== "EMPTY", final: current === "FINAL", testLock: false },
     entries: sortBoard(boardEntries),
+    simulate: current === "LIVE",
   };
 }
 

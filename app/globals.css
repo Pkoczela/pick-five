@@ -580,6 +580,38 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
   .site-footer { flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; padding-block: 24px; }
 }
 
+/* Live projections stay pale; settled results use strong, accessible colors in both themes. */
+.progress-covering { background: #e3f2dc; color: #244b22; }
+.progress-covered { background: #226039; color: #fff; }
+.progress-trailing { background: #fbe4e1; color: #842e29; }
+.progress-missed { background: #9b302d; color: #fff; }
+.progress-tied { background: #fff0c2; color: #684800; }
+.progress-push { background: #e1e6ec; color: #384451; }
+.progress-upcoming { background: var(--surface-2); color: var(--text-soft); }
+.own-live-section { margin-block: 24px 32px; scroll-margin-top: 24px; }
+.own-live-section .player-card { max-width: 760px; }
+.pick-progress-strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; padding: 0 16px 14px; }
+.pick-progress-strip > span { display: flex; align-items: center; justify-content: space-between; gap: 3px; padding: 9px 8px; border-radius: 6px; font-size: .75rem; }
+.live-pick-row { display: grid; gap: 8px; padding: 14px 16px; border-top: 1px solid #00000012; }
+.live-pick-heading, .live-game-score { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.live-pick-heading > strong { font: 800 .95rem var(--font-mono); }
+.live-pick-heading > span { font-size: .73rem; font-weight: 800; }
+.live-game-score { font-size: .8rem; font-variant-numeric: tabular-nums; }
+.live-game-score > span { font-size: .73rem; }
+.score-feed { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 18px; margin-block: 20px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius); }
+.score-feed p { margin: 5px 0; font-size: .8rem; }
+.score-feed .button-row { flex-wrap: wrap; }
+.score-feed .check-field { font-size: .8rem; }
+.live-color-key { margin-block: 20px; font-size: .8rem; }
+.live-color-key summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 750; }
+.live-color-key > div { display: flex; flex-wrap: wrap; gap: 8px; }
+.live-color-key span { padding: 8px 12px; border-radius: 6px; }
+@media (max-width: 420px) {
+  .pick-progress-strip { gap: 4px; padding-inline: 12px; }
+  .pick-progress-strip > span { padding-inline: 5px; font-size: .68rem; }
+  .live-pick-row { padding-inline: 12px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

@@ -1,6 +1,14 @@
 # Design preview
 
-The design preview runs the **real application** (same pages, components, and CSS) with a fictional league instead of Supabase. Whatever you see in the preview is exactly what ships when the branch merges.
+The design preview runs the **real application** (same pages, components, and CSS) with a fictional league instead of Supabase. Preview-only simulation controls and sample score updates are not enabled in production.
+
+## Live progress preview (October 11)
+
+Choose Screen → Live board and Scenario → Live in the preview toolbar. Cards have five progress tiles, scores, quarter/clock, and labeled pale green/red live states versus strong green/red final states. Amber means currently on the spread; slate means a final push/void. Your card stays above league filters even if eliminated or excluded by a search.
+
+The fictional feed cycles every eight seconds. Pause, advance manually, or simulate connection loss; stale snapshots remain visible. This is display-only simulation, not an NFL feed integration or automated settlement. No production database writes or changes to grading/permissions were added. Production score ingestion and passing score snapshots through the real data loader remain separate work.
+
+Verification: 100 unit tests, lint, typecheck and optimized preview build passed. Headless Chromium checks passed at 320px, 390px and 1440px for overflow, filtering, own-card pinning, score stepping, interrupted updates, dark mode, pre-lock privacy and API isolation. Physical iPhone/Safari review remains recommended.
 
 ## Running it
 
