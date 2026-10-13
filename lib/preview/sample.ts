@@ -249,7 +249,11 @@ export function sampleLive(state: PreviewState, weekId: string): LiveData {
         } };
       });
     const summary = summarizeLiveEntry(picks.map((pick) => pick.result));
-    return { id: `entry-${person}`, name: people[person], own: person === ME, tiebreaker: entry.tiebreaker, alive: summary.aliveForFive, correct: summary.correct, picks };
+    const winner = person === (pastWeek ? pastWeek.winner : WINNER);
+    const actual = pastWeek ? 40 + pastWeek.number : 44;
+    return { id: `entry-${person}`, name: people[person], own: person === ME, tiebreaker: entry.tiebreaker, alive: summary.aliveForFive, correct: summary.correct, picks,
+      finalResult: current === "FINAL" ? { winner, fiveAndZero: summary.correct === 5, incorrect: picks.filter(pick => pick.result === "INCORRECT").length, pushes: picks.filter(pick => pick.result === "PUSH").length, voids: 0, actual, error: Math.abs(entry.tiebreaker - actual), winningsCents: winner ? pastWeek?.payoutCents ?? jackpotCents(state) : 0 } : undefined,
+    };
   });
   return {
     week: { id: weekId, number: pastNumber || WEEK_NUMBER, lockAt: lockAt(boardState).toISOString(), locked: current !== "OPEN" && current !== "EMPTY", final: current === "FINAL", testLock: false },
@@ -267,7 +271,7 @@ export function sampleHistory(state: PreviewState): HistoryData {
   if (phase(state) === "EMPTY") return { leagueName: "Sunday Social", weeks: [] };
   const weeks = pastWeeks.map((week) => ({ id: `sample-week-${week.number}`, season: 2026, number: week.number, winners: week.winner === null ? [] : [people[week.winner]], payoutCents: week.payoutCents, rolloverCents: week.rolloverCents }));
   if (phase(state) === "FINAL") weeks.push({ id: WEEK_ID, season: 2026, number: WEEK_NUMBER, winners: [people[WINNER]], payoutCents: jackpotCents(state), rolloverCents: 0 });
-  return { leagueName: "Sunday Social", weeks: weeks.reverse() };
+  return { leagueName: "Sunday Social", weeks: weeks.reverse().map(week => ({ ...week, finalizedAt: new Date(Date.UTC(2026, 8, 15 + (week.number - 1) * 7, 12)).toISOString(), entries: sampleLive(state, week.id).entries })) };
 }
 
 export function sampleLeagues(state: PreviewState): Omit<LeaguesData, "error" | "notice"> {

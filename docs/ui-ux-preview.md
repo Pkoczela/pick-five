@@ -17,9 +17,20 @@ Verification: 100 unit tests, lint, typecheck and optimized preview build passed
 - Historical boards and season totals share the same per-week sample picks, matching the recap winner (or no winner).
 - Rotated invite codes are displayed only in the league that owns the cookie.
 
-The production loaders depend on the existing catch-up-fee RPC introduced on `main` by the catch-up-fee work. This change does not copy, apply, or modify database migrations, grading, or fee rules. Do not deploy this branch against an older database lacking that RPC; failures surface instead of silently displaying base-only totals. Preview mode remains sample-only and does not require the RPC.
+The production loaders depend on the existing catch-up-fee RPC introduced on `main` by the catch-up-fee work. Do not deploy this branch against an older database lacking that RPC; failures surface instead of silently displaying base-only totals. Preview mode remains sample-only and does not require the RPC.
 
 Verification: 118 tests, lint, typecheck, optimized build, and headless Chromium checks for scenario/reset, save failure/retry, historical winners, payment totals and mobile overflow. No production Supabase access was used. Real NFL feed integration and physical iPhone/Safari review remain separate.
+
+## Main integration (October 13)
+
+Merged `origin/main` at `b42d48a` into the redesign branch, not the reverse. Resolved the seven overlapping files by retaining the redesigned page/loader structure and design tokens while preserving main's behavior:
+
+- Catch-up-fee domain logic, both migrations, and financial tests match main unchanged. Migrations were incorporated into Git only; none were applied to a database.
+- History expands in place with final results, top score, finalized time, winner/payout, tiebreaker prediction/actual/error, and the current player's card first.
+- The archive and full finalized-week board share the same recorded results. Both historical and locked-week spreads use the submitted official line rather than the current line.
+- Payment and jackpot displays continue to use assessed amounts and the authoritative contribution RPC.
+
+Verification: 128 tests, lint, typecheck and optimized preview build passed. Headless Chromium checks at 320/390/1440px passed for keyboard history expansion, own-first ordering, tiebreaker/payout details, full-board navigation, no horizontal overflow, sample-only API isolation, and the existing pick/reset/live-board regression suite. The preview still simulates live scores; this merge does not add a production NFL feed. Main and production data were not modified.
 
 ## Running it
 

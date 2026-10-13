@@ -1,5 +1,33 @@
 import { describe, expect, it } from "vitest";
-import { calculateWeeklyFinancials, validatePayoutAllocations } from "@/lib/domain/financials";
+import { calculateEntryFeeDue, calculateWeeklyFinancials, validatePayoutAllocations } from "@/lib/domain/financials";
+
+describe("calculateEntryFeeDue", () => {
+  it("adds consecutive fees missed before the player's first return", () => {
+    expect(calculateEntryFeeDue(1000, [
+      { entryFeeCents: 1000, entered: false },
+      { entryFeeCents: 1500, entered: false },
+    ])).toBe(3500);
+  });
+
+  it("charges only the current fee after a winner resets the run", () => {
+    expect(calculateEntryFeeDue(1000, [])).toBe(1000);
+  });
+
+  it("does not charge an already-assessed missed week again", () => {
+    expect(calculateEntryFeeDue(1000, [
+      { entryFeeCents: 1000, entered: false },
+      { entryFeeCents: 1000, entered: true },
+    ])).toBe(1000);
+  });
+
+  it("charges only misses after the player's most recent entry", () => {
+    expect(calculateEntryFeeDue(1000, [
+      { entryFeeCents: 1000, entered: false },
+      { entryFeeCents: 1000, entered: true },
+      { entryFeeCents: 1500, entered: false },
+    ])).toBe(2500);
+  });
+});
 
 describe("calculateWeeklyFinancials", () => {
   it("pays the contribution to a winner", () => {
@@ -34,6 +62,21 @@ describe("calculateWeeklyFinancials", () => {
       rolloverInCents: 5000,
       resolution: "NO_WINNER",
     })).toMatchObject({ finalContributionCents: 0, rolloverOutCents: 5000 });
+  });
+
+  it("uses catch-up fee obligations in the calculated contribution", () => {
+    expect(calculateWeeklyFinancials({
+      participatingEntries: 3,
+      defaultEntryFeeCents: 1000,
+      calculatedContributionCents: 5000,
+      rolloverInCents: 6000,
+      resolution: "NO_WINNER",
+    })).toMatchObject({
+      calculatedContributionCents: 5000,
+      finalContributionCents: 5000,
+      availableJackpotCents: 11000,
+      rolloverOutCents: 11000,
+    });
   });
 });
 

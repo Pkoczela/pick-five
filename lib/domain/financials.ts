@@ -1,5 +1,19 @@
 import type { WeeklyFinancialInput, WeeklyFinancialResult } from "./types";
 
+export function calculateEntryFeeDue(
+  currentEntryFeeCents: number,
+  priorWeeks: Array<{ entryFeeCents: number; entered: boolean }>,
+) {
+  assertCents(currentEntryFeeCents, "currentEntryFeeCents");
+  const outstandingCatchUpCents = priorWeeks.reduce((outstanding, week, index) => {
+    assertCents(week.entryFeeCents, `priorWeeks[${index}].entryFeeCents`);
+    // A submitted entry is the point where all earlier missed fees in the
+    // active rollover run were assessed. Only misses after that return remain.
+    return week.entered ? 0 : safeAdd(outstanding, week.entryFeeCents);
+  }, 0);
+  return safeAdd(currentEntryFeeCents, outstandingCatchUpCents);
+}
+
 export function calculateWeeklyFinancials(input: WeeklyFinancialInput): WeeklyFinancialResult {
   assertCents(input.defaultEntryFeeCents, "defaultEntryFeeCents");
   assertCents(input.rolloverInCents, "rolloverInCents");
@@ -10,6 +24,7 @@ export function calculateWeeklyFinancials(input: WeeklyFinancialInput): WeeklyFi
   if (input.calculatedContributionCents !== undefined) {
     assertCents(input.calculatedContributionCents, "calculatedContributionCents");
   }
+
   const calculatedContributionCents = input.calculatedContributionCents ?? safeMultiply(
     input.participatingEntries,
     input.defaultEntryFeeCents,

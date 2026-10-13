@@ -418,6 +418,14 @@ input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--accent);
 .history-card:hover { border-color: var(--line-strong); }
 .history-card h2 { margin: 10px 32px 4px 0; font-size: 1.25rem; letter-spacing: -0.03em; }
 .history-card p { margin: 0; color: var(--text-soft); }
+.history-list > li:has(details[open]) { grid-column: 1 / -1; }
+.history-card summary { cursor: pointer; min-height: 44px; list-style: none; }
+.history-card summary::-webkit-details-marker { display: none; }
+.history-card summary:focus-visible { outline: 3px solid var(--text); outline-offset: 5px; border-radius: 4px; }
+.history-toggle { display: flex; justify-content: space-between; align-items: center; min-height: 44px; font-weight: 800; }
+.history-card[open] .history-toggle > span { transform: rotate(45deg); }
+.history-week-details { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px; }
+.entry-result-footer { display: flex; flex-wrap: wrap; gap: 8px 16px; }
 .history-arrow { position: absolute; top: 18px; right: 18px; color: var(--accent); }
 
 /* ------------------------------------------------------------ leagues */
