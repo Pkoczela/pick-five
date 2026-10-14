@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { assertDatabaseAllowed } from "@/lib/preview-mode";
 
 const serverEnvSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.url(),
@@ -8,6 +9,7 @@ const serverEnvSchema = z.object({
 });
 
 export function getServerEnv() {
+  assertDatabaseAllowed();
   return serverEnvSchema.parse(process.env);
 }
 

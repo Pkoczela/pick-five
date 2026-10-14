@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { CommissionerNav, Navigation } from "@/components/navigation";
+import { THEME_COOKIE, parseTheme } from "@/lib/theme";
 
 type AppShellProps = {
   leagueName: string;
@@ -8,24 +11,25 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-export function AppShell({ leagueName, displayName, isAdmin, leagueCount, children }: AppShellProps) {
+export async function AppShell({ leagueName, displayName, isAdmin, leagueCount, children }: AppShellProps) {
+  const theme = parseTheme((await cookies()).get(THEME_COOKIE)?.value);
   return (
     <div className="app-frame">
+      <a className="skip-link" href="#main-content">Skip to content</a>
       <header className="app-header">
         <Link href="/dashboard" className="wordmark">
           <span className="mark" aria-hidden="true">5</span><span>PICK FIVE</span>
         </Link>
-        <Link href="/leagues" className="league-chip" aria-label="Switch or manage leagues"><span>{leagueName}</span><strong>{displayName} · {leagueCount > 1 ? "Switch pool" : "Manage pools"}</strong></Link>
+        <Link href="/leagues" className="league-chip" aria-label={`${leagueName}, playing as ${displayName}. ${leagueCount > 1 ? "Switch pool" : "Manage pools"}`}>
+          <span>{leagueName}</span><strong>{displayName}</strong>
+        </Link>
       </header>
       <div className="app-layout">
-        <nav className="app-nav" aria-label="Pool navigation">
-          <Link href="/dashboard">This week</Link>
-          <Link href="/standings">Standings</Link>
-          <Link href="/history">History</Link>
-          {isAdmin ? <Link href="/admin">Commissioner</Link> : null}
-          <form action="/api/auth/logout" method="post"><button type="submit">Log out</button></form>
-        </nav>
-        <main className="app-main">{children}</main>
+        <Navigation isAdmin={isAdmin} theme={theme} />
+        <main className="app-main" id="main-content" tabIndex={-1}>
+          {isAdmin ? <CommissionerNav /> : null}
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -1,9 +1,13 @@
 import "server-only";
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { createUserClient } from "@/lib/supabase/server";
 import { ACTIVE_LEAGUE_COOKIE } from "@/lib/auth/active-league";
 import { selectActiveMembership } from "@/lib/auth/membership-selection";
+import { isPreviewMode } from "@/lib/preview-mode";
+import { getPreviewState } from "@/lib/preview/server";
+import { sampleLeagueContext } from "@/lib/preview/sample";
 
 export type LeagueContext = {
   userId: string;
@@ -22,7 +26,9 @@ type MembershipRow = {
   league: { id: string; name: string } | null;
 };
 
-export async function requireLeagueContext(): Promise<LeagueContext> {
+/** Cached per request: layouts and pages both call this. */
+export const requireLeagueContext = cache(async (): Promise<LeagueContext> => {
+  if (isPreviewMode()) return sampleLeagueContext(await getPreviewState());
   const supabase = await createUserClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -40,7 +46,7 @@ export async function requireLeagueContext(): Promise<LeagueContext> {
     leagueName: membership.league.name,
     leagueCount: memberships.length,
   };
-}
+});
 
 export async function requireAdminContext() {
   const context = await requireLeagueContext();

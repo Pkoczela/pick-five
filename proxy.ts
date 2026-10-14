@@ -1,7 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isPreviewMode } from "@/lib/preview-mode";
 
 export async function proxy(request: NextRequest) {
+  if (isPreviewMode()) {
+    // The design preview renders real pages with sample data; nothing may reach the server's write paths.
+    if (request.nextUrl.pathname.startsWith("/api/") || !["GET", "HEAD"].includes(request.method)) {
+      return NextResponse.json({ error: "Sample preview: server interactions are disabled." }, { status: 403 });
+    }
+    return NextResponse.next();
+  }
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
     return NextResponse.next();
   }
