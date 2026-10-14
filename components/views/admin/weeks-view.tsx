@@ -60,7 +60,7 @@ export function WeeksView({ leagueName, seasonYear, week, games, error, notice }
                   <li className="admin-game" key={game.id}>
                     <div className="admin-matchup"><span>{formatDateTime(game.kickoffAt)}</span><strong>{game.away} <small>at</small> {game.home}</strong></div>
                     <input type="hidden" name="gameId" value={game.id} />
-                    <label className="field"><span>{game.home} spread</span><input name="homeSpread" type="number" step="0.5" inputMode="decimal" defaultValue={game.homeSpread ?? ""} placeholder="−3.5" required /></label>
+                    <label className="field"><span>{game.home} spread</span><input name="homeSpread" type="text" inputMode="text" pattern={String.raw`[\+\-]?(?:[0-9]+(?:\.[05]0*)?|\.[05]0*)`} title="Enter whole or half points, such as -3.5, +3, or 0." autoComplete="off" autoCorrect="off" spellCheck={false} defaultValue={game.homeSpread ?? ""} placeholder="-3.5" required /></label>
                   </li>
                 ))}
               </ul>
