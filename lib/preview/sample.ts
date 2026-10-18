@@ -267,6 +267,23 @@ export function sampleStandings(state: PreviewState): StandingsData {
   return { leagueName: "Sunday Social", ownMemberId: memberId(ME), rows: computeStandings(members, results), summary: summarizeSeason(results) };
 }
 
+/** A sample-only GET feed exercises the same polling client as production. */
+export function sampleLiveSnapshot(state: PreviewState, weekId: string, now = Date.now()): LiveData {
+  const data = sampleLive(state, weekId);
+  if (!data.week.locked) return { ...data, entries: [], simulate: false, poll: true };
+  if (!data.simulate) return data;
+  const step = Math.floor(now / 30_000) % 3;
+  return { ...data, simulate: false, feed: { source: "Sample", status: "fresh", observedAt: new Date(now).toISOString() }, entries: data.entries.map(entry => ({ ...entry, picks: entry.picks.map(pick => {
+    if (pick.game?.status !== "IN_PROGRESS") return pick;
+    const index = Number(pick.game.id.split("-").at(-1));
+    return { ...pick, game: { ...pick.game, source: "provider" as const,
+      homeScore: step === 2 && index === 5 ? 24 : 17,
+      awayScore: index === 6 ? 17 : step === 0 ? 14 : index === 4 ? step === 1 ? 21 : 28 : 24,
+      detail: ["Q3 · 6:42", "Q3 · 3:18", "Q4 · 12:05"][step],
+    } };
+  }) })) };
+}
+
 export function sampleHistory(state: PreviewState): HistoryData {
   if (phase(state) === "EMPTY") return { leagueName: "Sunday Social", weeks: [] };
   const weeks = pastWeeks.map((week) => ({ id: `sample-week-${week.number}`, season: 2026, number: week.number, winners: week.winner === null ? [] : [people[week.winner]], payoutCents: week.payoutCents, rolloverCents: week.rolloverCents }));

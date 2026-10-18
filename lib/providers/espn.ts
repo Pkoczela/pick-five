@@ -10,7 +10,7 @@ const competitorSchema = z.object({
 const eventSchema = z.object({
   id: z.string(),
   date: z.string(),
-  status: z.object({ type: z.object({ name: z.string(), completed: z.boolean().optional() }) }),
+  status: z.object({ type: z.object({ name: z.string(), completed: z.boolean().optional(), shortDetail: z.string().optional(), detail: z.string().optional() }) }),
   competitions: z.array(z.object({ competitors: z.array(competitorSchema) })).min(1),
 });
 const responseSchema = z.object({ events: z.array(eventSchema).default([]) });
@@ -53,6 +53,7 @@ function mapEvent(event: z.infer<typeof eventSchema>): ExternalGame {
     externalSource: "ESPN",
     externalEventId: event.id,
     kickoffAt: new Date(event.date).toISOString(),
+    detail: event.status.type.shortDetail ?? event.status.type.detail ?? event.status.type.name.replace(/^STATUS_/, "").replaceAll("_", " "),
     status: mapStatus(event.status.type.name, event.status.type.completed),
     home: mapTeam(home),
     away: mapTeam(away),
