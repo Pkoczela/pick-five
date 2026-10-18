@@ -12,6 +12,14 @@ vi.mock("@supabase/supabase-js", () => ({ createClient }));
 afterEach(() => { vi.unstubAllEnvs(); vi.clearAllMocks(); });
 
 describe("sample preview database isolation", () => {
+  it("only permits the isolated sample score GET, never real scores or writes", async () => {
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect((await proxy(new NextRequest("https://preview.example/api/live/sample-week-6"))).status).toBe(200);
+    for (const [path, method] of [["/api/live/sample-week-6", "POST"], ["/api/live/real-week", "GET"], ["/api/live/sample-week-7", "GET"]]) {
+      expect((await proxy(new NextRequest(`https://preview.example${path}`, { method }))).status).toBe(403);
+    }
+    expect(createClient).not.toHaveBeenCalled();
+  });
   it("always isolates Vercel previews, even with production credentials present", () => {
     vi.stubEnv("VERCEL_ENV", "preview");
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://production.example.invalid");

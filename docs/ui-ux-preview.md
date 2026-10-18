@@ -2,11 +2,23 @@
 
 The design preview runs the **real application** (same pages, components, and CSS) with a fictional league instead of Supabase. Preview-only simulation controls and sample score updates are not enabled in production.
 
-## Live progress preview (October 11)
+## Live scores (October 18)
+
+The production board now overlays real ESPN scores via a read-only authenticated GET, without writing scores, grading picks, locking entries, or changing payouts. It refreshes about every 30 seconds while visible, checks on tab/network return, and provides a manual refresh. Before lock it polls only week visibility and reveals no entries; after finalization it stops. Commissioner test-lock mode does not fetch ESPN. Scores respect commissioner overrides and match imported event IDs and team abbreviations; pick spreads remain the submitted lines.
+
+The UI distinguishes delayed/partial feeds, retains the last provider scores during interruption, and shows how long ago the last successful check occurred. Finished games whose picks have not been officially graded display “Awaiting grading”; official results remain authoritative. The existing commissioner refresh/finalization workflow is unchanged.
+
+Only public ESPN snapshots are coalesced for 20 seconds per server instance; authenticated entry responses are private and uncached. Provider timeouts and missing/mismatched games never manufacture scores. No cron job, credential, or migration is required. The existing `ESPN_SCOREBOARD_BASE_URL` override remains available.
+
+For safe review, choose **Live board → Live** in the preview toolbar. The preview uses the same polling client and GET route with fictional, time-varying snapshots. **Refresh scores** requests a snapshot immediately. Toggle **Fail saves** to interrupt the sample feed, then turn it off and refresh to recover. No preview request can access Supabase or real league data.
+
+Verification: automated tests cover provider parsing/coalescing, membership and league scoping, pre-lock privacy, override preservation, stale-score retention, preview isolation, and no grading changes. Browser checks exercise polling, failure/recovery, hidden-tab pause/resume, own-card pinning/filter preservation, terminal transitions, and 320/390/1440px overflow. A read-only public ESPN request confirmed in-progress scores and clock fields. Authenticated production league data has not been accessed or modified; deploy only after explicit approval.
+
+## Original live progress prototype (October 11)
 
 Choose Screen → Live board and Scenario → Live in the preview toolbar. Cards have five progress tiles, scores, quarter/clock, and labeled pale green/red live states versus strong green/red final states. Amber means currently on the spread; slate means a final push/void. Your card stays above league filters even if eliminated or excluded by a search.
 
-The fictional feed cycles every eight seconds. Pause, advance manually, or simulate connection loss; stale snapshots remain visible. This is display-only simulation, not an NFL feed integration or automated settlement. No production database writes or changes to grading/permissions were added. Production score ingestion and passing score snapshots through the real data loader remain separate work.
+The original prototype cycled fictional scores every eight seconds. The October 18 implementation above supersedes that simulation-only board. No changes to official grading or permissions were introduced.
 
 Verification: 100 unit tests, lint, typecheck and optimized preview build passed. Headless Chromium checks passed at 320px, 390px and 1440px for overflow, filtering, own-card pinning, score stepping, interrupted updates, dark mode, pre-lock privacy and API isolation. Physical iPhone/Safari review remains recommended.
 
@@ -47,7 +59,7 @@ The bar at the top of every page controls the sample league:
 - **Screen**: jump to any page, including the logged-out landing and auth pages.
 - **Scenario**: Open, Submitted, Locked, Live, Final, Empty (new season, no data), Error (renders the real error boundary), Loading (holds every page in the real loading state).
 - **Role**: Commissioner or Player. Players are redirected away from commissioner pages exactly as in production.
-- **Fail saves**: makes the next pick submission fail, to review recovery.
+- **Fail saves**: makes pick submissions and sample score requests fail, to review recovery.
 - **Reset**: clears all preview state.
 
 Picks you submit are kept in a browser cookie and flow through the dashboard, live board, and commissioner entry list. Commissioner forms (payments, spreads, publish, etc.) post to `/api/*`; the preview intercepts them and explains that server actions are disabled.
@@ -68,7 +80,7 @@ To change the design, edit the view or `app/globals.css`, check it in the previe
 ## Safety
 
 - `lib/preview-mode.ts` decides preview mode from the environment only.
-- In preview mode the proxy returns 403 for every `/api/*` request and every non-GET/HEAD request, and both Supabase client factories throw before reading credentials (`tests/preview-safety.test.ts`).
+- In preview mode the only allowed API request is GET `/api/live/sample-week-[1-6]`, which uses sample data exclusively. Other API requests and every non-GET/HEAD request return 403. Both Supabase client factories throw before reading credentials (`tests/preview-safety.test.ts`).
 - `requireLeagueContext` returns the sample context in preview mode, so no page can fall through to a database query.
 
 ## Theme

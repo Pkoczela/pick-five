@@ -16,6 +16,12 @@ const fixture = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("EspnNflProvider", () => {
+  it.each(["STATUS_IN_PROGRESS", "STATUS_HALFTIME", "STATUS_END_PERIOD"])("preserves live status and clock for %s", async name => {
+    const live = { ...fixture, events: fixture.events.map(event => ({ ...event, status: { type: { name, completed: false, shortDetail: "3rd - 6:42" } } })) };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(live))));
+    const [game] = await new EspnNflProvider("https://example.test/scoreboard").getWeekSchedule({ year: 2026, week: 6, seasonType: 2 });
+    expect(game).toMatchObject({ status: "IN_PROGRESS", detail: "3rd - 6:42" });
+  });
   it("normalizes an ESPN event into the provider-neutral contract", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(fixture), { status: 200 })));
     const games = await new EspnNflProvider("https://example.test/scoreboard").getWeekSchedule({ year: 2026, week: 1, seasonType: 2 });

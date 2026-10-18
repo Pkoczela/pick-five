@@ -9,6 +9,7 @@ export type GameSnapshot = {
   selectedSide: "HOME" | "AWAY";
   status: "SCHEDULED" | "IN_PROGRESS" | "FINAL" | "POSTPONED" | "CANCELED";
   detail: string;
+  source?: "provider" | "stored" | "override";
 };
 export type ProgressPick = { result: LivePickResult; spread: number; game?: GameSnapshot };
 export function pickProgress(pick: ProgressPick) {
